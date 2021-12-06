@@ -1,0 +1,28 @@
+# You can use substitution rules to tweak the way espeak* will say
+# certain words; this can help, e.g., if you are not satisfied
+# with the results of the default text-to-speech-conversion
+# algorithm. For example:
+
+# Ensure the initial 'e' in efabulor is pronounced as in e-mail:
+
+efabulor
+ee fabulor
+
+# You can also use substitution rules to replace any text whatsoever,
+# according to your needs. If you are planning to use efabulor as a
+# proofreading tool, be careful with this kind of substitutions, as you
+# no longer can assume that what you hear is what is written in the
+# input file:
+
+99.99% sure
+confident enough
+
+# Another potential use is to help you detect typos. For example,
+# the following rule will help you spot double-spaces within sentences.
+# (Using regular expressions as substitution rules is fine.)
+
+s/\s{2,}/ double space /
+
+
+# * Remember that the actual speaking is not done by efabulor, which is
+#   only a wrapper around espeak.

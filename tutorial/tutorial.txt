@@ -1,0 +1,9 @@
+Good job! I worked a lot to craft this text for my client, and I'd like to be 99.99% sure it's OK before I deliver it. Wouldn't it be great to have someone read it aloud for me? That might give me, e.g., a sense of whether it "flows" well.
+
+Luckily, I have efabulor: a companion tool for everyone who works in text creation. It reads a text file, separates it in smaller units (like paragraphs or sentences) and sends them to be read aloud one after the other by espeak, a freely available speech-generation engine. You have full keyboard control of the process (like going back and forward, pausing and resuming reading, etc.). And you can install other free tools like mbrola to improve the speech-synthesis performance, and Libreoffice and unoconv to enable the reading of non plain-text files.
+
+Grammar errors, duplicated words and some typos are difficult to detect on screen when you are tired, but having the same text read aloud by a computer can make those errors readily apparent.
+
+If you are a translator, you can listen to the target text while reading the source text along (or vice versa). Once you learn how to do it, it can be another way to check your translations, in addition to the standard (error-prone) procedure of reading back and forth between source and target text. 
+
+And if you keep efabulor running while you are editing the input file, it can give you immediate feedback of changes as they are being made.

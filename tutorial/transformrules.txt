@@ -1,0 +1,73 @@
+[DO]
+
+s/([.!?])/$1\n/
+
+# Transformation rules such as the one above allow you to tweak the
+# way efabulor splits the text into units.
+
+# Normally, efabulor will start a new unit at every newline character.
+# The rule above is a substitution regular expression, and it
+# tells efabulor to add a newline character (\n) immediately after
+# every occurrence of a period, an exclamation mark or a question mark.
+
+# Don't worry, the newline is added internally after reading the input
+# file, it is not written into the input file itself. efabulor has no
+# way whatsoever to modify the input file.
+
+# If you ever used sed or Perl to do text processing, you already know
+# how to use regular expressions. (Note that efabulor allows to use either
+# a dollar sign or a backslash to introduce backreferences.)
+
+# The rules are not applied by efabulor directly, but by a companion
+# tool called efabtrans. Having this functionality implemented in a
+# separate program allows you to reuse your transformation rules in
+# other workflows if you need to.
+
+# By the way, did you notice how to add comments?
+
+
+# If you don't want a transformation rule to be applied in certain
+# places, you can define protection rules and put them in a [do not]
+# section. Spans of text matching a protection rule in a [do not]
+# section are protected from rules contained in the preceding [do]
+# section. You can create as many [do] sections as you need, each of
+# them potentially followed by a [do not] section.
+
+[DO NOT]
+
+# Protect periods contained within numbers.
+
+/\d+\.\d+/
+
+# Protect abbreviations.
+
+e.g.
+etc.
+
+# As you see, protection rules can be either a regular expression or
+# plain text.
+
+[DO]
+
+# There is more! You are not limited to use the transformation
+# rules to add newline characters, you can use them to do any kind of
+# preprocessing to the text. For example, I use a rule similar to the
+# following one to have efabulor let me know if there are any spaces
+# and/or tabs at the end of paragraphs, which normally you cannot see
+# (I'm very much against hidden spaces at the end of paragraphs. They
+# are a huge waste of disk space.)
+
+# Uncomment the following rule to activate detection of hidden spaces.
+# If efabulor does not start the reading again, try to see if you find
+# the place where there was a hidden space in the input file I provided
+# for this tutorial.
+
+# s/[ \t]+\n/ Oh no! There are spaces at the end of a paragraph.\n/
+
+# Actually, I would put a rule like the one above before the rules
+# which add newlines to the input text (so the alert will be read aloud
+# in the paragraph where it belongs). Practice will teach you how to
+# define transformation rules to fit your needs.
+
+# You will find more information on transformation rules in the manual.
+
