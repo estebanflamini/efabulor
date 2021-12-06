@@ -1,5 +1,7 @@
 NOTE: this repository is still BETA.
 
 **efabulor** is a wrapper around **espeak**, a freely-available speech-synthesis engine. It reads a plain-text file, splits it in sentences, and sends them one after the other to be read aloud by **espeak**. The user can control the reading process (go back and forth, stop, pause and resume the reading, find text, etc.) using the keyboard. Transformation rules can be applied to the text to add newline characters at selected points to tweak the sentence-splitting process. (You can also apply external preprocessing filters to the text to do the same, or to apply any kind of processing to the text). Substitution rules can be applied to each sentence after reading the input file, to further control the reading by **espeak** (e.g., to improve on the results of **espeak**’s text-to-speech-conversion algorithm).
+
 The output of a command can be used as a text source to read non-plain-text files, and a companion program **efabconv.py** is supplied to simplify the conversion of non-plain-text files by assigning preconfigured text-extraction-command templates to different file extensions and/or mimetypes.
+
 Currently **efabulor** is a command-line tool and there are no plans to provide a graphical-user-interface any time soon (however, the program includes the option to be executed in a ‘scripted’ mode intended to simplify the creation of an external graphical front-end without having to modify the program).
