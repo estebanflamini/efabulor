@@ -1,4 +1,4 @@
-NOTE: this repository is still BETA.
+NOTE: this repository is currently BETA. Will add a full manual, design notes, and contributing guidelines asap with first official release.
 
 **efabulor** is a wrapper around **espeak**, a freely-available speech-synthesis engine. It reads a plain-text file, splits it in sentences, and sends them one after the other to be read aloud by **espeak**. The user can control the reading process (go back and forth, stop, pause and resume the reading, find text, etc.) using the keyboard. Transformation rules can be applied to the text to add newline characters at selected points to tweak the sentence-splitting process. (You can also apply external preprocessing filters to the text to do the same, or to apply any kind of processing to the text). Substitution rules can be applied to each sentence after reading the input file, to further control the reading by **espeak** (e.g., to improve on the results of **espeak**’s text-to-speech-conversion algorithm).
 
