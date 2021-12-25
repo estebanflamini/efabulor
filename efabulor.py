@@ -776,9 +776,8 @@ class Player:
       cls._running = False
       cls._lock.release()
       with Output.get_lock():
-        Output.say(_('The player stopped as requested.'), type_of_msg=Output.INFO)
         if RuntimeOptions.stop_after_current_line():
-          RuntimeOptions.stop_after_current_line(False, say_it=not RuntimeOptions.stop_after_each_line())
+          RuntimeOptions.stop_after_current_line(False, say_it=False)
         if RuntimeOptions.stop_after_each_line():
           Output.say(_('The player is stopping at the end of each line.'), type_of_msg=Output.INFO)
     else:
