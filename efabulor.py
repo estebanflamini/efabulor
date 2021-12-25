@@ -2682,7 +2682,7 @@ class KeyBindings:
     ')': 'stop ; modifyopt sequence-mode',
     '=': 'stop ; modifyopt feedback-mode',
     '!': 'stop ; cmd',
-    '0': 'stop ; modifyopt sequence-mode changes ; modifyopt feedback-mode full ; modifyopt stop-after-each-line true',
+    '0': 'stop ; modifyopt tracking-mode forward ; modifyopt feedback-mode full ; modifyopt stop-after-each-line true',
     '1': 'stop ; modifyopt tracking-mode backward ; modifyopt feedback-mode minimum ; modifyopt stop-after-each-line false',
     'I': 'stop ; showinputcmd',
     'i': 'showinputcmd'
