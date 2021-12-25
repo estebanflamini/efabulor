@@ -77,8 +77,8 @@ elif PLATFORM == 'Windows':
   import msvcrt
   LINUX = False
   WINDOWS = True
-  EFABTRANS = 'python ' + EFABTRANS.replace('\\', '/')
-  EFABCONV = 'python ' + EFABCONV.replace('\\', '/')
+  EFABTRANS = sys.executable + ' ' + EFABTRANS.replace('\\', '/')
+  EFABCONV = sys.executable + ' ' + EFABCONV.replace('\\', '/')
 else:
   sys.exit(_('Fatal error: could not determine host platform or it is unsupported.'))
 
