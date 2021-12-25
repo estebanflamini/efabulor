@@ -707,6 +707,8 @@ class Player:
   _started = threading.Event()
   _stopped = threading.Condition(_lock)
   
+  _never_said_anything = True
+
   @classmethod # class Player
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def start(cls):
@@ -722,10 +724,16 @@ class Player:
     cls._started.clear()
     line = cls._line_to_be_read
     Main.start_daemon(lambda: cls._say_line(line))
+    cls._never_said_anything = False
     cls._started.wait()
     if cls._reload_required: # In case the file was modified while the player was paused
       cls._reload_required = False
       InputTextLoader.start()
+
+  @classmethod # class Player
+  #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
+  def never_said_anything(cls):
+    return cls._never_said_anything
 
   @classmethod # class Player
   def _say_line(cls, line):
@@ -2142,8 +2150,6 @@ class TextVersions:
       if RuntimeOptions.tracking_mode() == cls.RESTART_FROM_BEGINNING:
         Output.say(_('Restarting from the beginning.'), type_of_msg=Output.INFO)
 
-  _this_is_the_first_time = True
-
   @classmethod # class TextVersions
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def _compose_spoken_feedback(cls):
@@ -2185,8 +2191,8 @@ class TextVersions:
     new_line_number = cls._new_line_number()
     if RuntimeOptions.tracking_mode() == cls.RESTART_FROM_BEGINNING and new_line_number is not None:
       SpokenFeedback.append_message(cls._spoken_feedback, 'starting-again')
-    elif RuntimeOptions.sequence_mode() is SEQUENCE_CHANGES and cls._this_is_the_first_time:
-      cls._this_is_the_first_time = False
+    elif RuntimeOptions.sequence_mode() is SEQUENCE_CHANGES and Player.never_said_anything():
+      pass
     elif new_line_number is None:
       if cls._spoken_feedback and cls._restart_player_after_playing_feedback:
         SpokenFeedback.append_message(cls._spoken_feedback, 'restarting')
