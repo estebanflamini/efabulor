@@ -2109,8 +2109,20 @@ class TextVersions:
             Output.say(_('The text was reverted to the state it had before the previous changes.'), type_of_msg=Output.INFO)
           return
       else:
-        list_of_lines = [str(i + 1) for i in cls._modified_lines]
-        list_of_lines = ', '.join(list_of_lines)
+        # Reduce contiguous ranges and convert line numbers to one-based for the screen
+        first = cls._modified_lines[0]
+        tmp = [(first, first)]
+        last = first
+        for line in cls._modified_lines[1:]:
+          if line == last + 1:
+            tmp[-1] = (first, line)
+          else:
+            first = line
+            tmp.append((first, first))
+          last = line
+        tmp = map(lambda x: str(x[0] + 1) if x[0] == x[1] else str(x[0] + 1) + '-' + str(x[1] + 1), tmp)
+        list_of_lines = ', '.join(tmp)
+
         delta = 1
         msg = _('Changes were detected at lines: %s (current line is: %s).')
         if cls._new_line_number() is not None:
