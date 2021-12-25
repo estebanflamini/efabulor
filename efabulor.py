@@ -2062,7 +2062,7 @@ class TextVersions:
   def _compare_lines(cls, lines, old_lines):
     if not lines:
       return []
-    s = difflib.SequenceMatcher(None, lines, old_lines)
+    s = difflib.SequenceMatcher(None, lines, old_lines, autojunk=False)
     tmp = [x for x in s.get_opcodes() if x[0] != 'equal']
     cls._input_lines_changed = len(tmp) > 0
     modified_lines = []
