@@ -1419,8 +1419,6 @@ class PlayerCommands:
       speed += delta
       Output.say(_('%s words/minute') % speed, type_of_msg=Output.INFO)
       EspeakController.speed(speed)
-    # The following lines must be called with lock released.
-    Player.update_player()
     return True
 
   @staticmethod # class PlayerCommands
