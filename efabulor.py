@@ -713,7 +713,7 @@ class Player:
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def start(cls):
     if cls._text_player.running():
-      Main.terminate('Internal error: trying to start the player when it is already started.')
+      return
     with cls._lock:
       if cls._at_eol:
         cls.line_number(RuntimeOptions.sequence_mode().next())
