@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # EFABULOR: a user-friendly command-line front-end to espeak
-# Copyright (C) 2021 Esteban Flamini <http://estebanflamini.com>
+# Copyright (C) 2021, 2022 Esteban Flamini <http://estebanflamini.com>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -2650,7 +2650,7 @@ class KeyBindings:
     'b': 'previous',
     '.': 'modifyopt stop-after-current-line',
     ',': 'modifyopt stop-after-each-line',
-    'S': 'modifyopt apply-subst',
+    'S': 'modifyopt apply-subst then updateplayer',
     'D': 'modifyopt show-subst then showline',
     'U': 'stop ; logsubst',
     'u': 'logsubst',
@@ -2945,6 +2945,7 @@ class RuntimeOptions:
       value = (not old_value) if value is None else (value in cls._BooleanOption._true_values)
       if name == 'apply-subst':
         cls.apply_subst(value, say_it=True)
+        return Player.line_to_be_read_changed()
       elif name == 'show-subst':
         cls.show_subst(value, say_it=True)
       else:
@@ -3102,8 +3103,6 @@ class RuntimeOptions:
         Output.say(_('Substitution rules will be applied.'), type_of_msg=Output.INFO)
       else:
         Output.say(_('Substitution rules will not be applied.'), type_of_msg=Output.INFO)
-    if Player.line_to_be_read_changed():
-      Player.update_player()
 
   _show_subst = False
 
