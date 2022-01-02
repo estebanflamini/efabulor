@@ -1515,6 +1515,8 @@ class NonPlayerCommands:
       Output.say(no_file_msg, type_of_msg=Output.ERROR)
       return False
 
+    Player.stop()
+
     if len(file_list) == 1:
       return cls.open_file(file_list[0])
 
@@ -1754,6 +1756,7 @@ class InputTextLoader:
           text = cp.stdout
         log = cp.stderr
         if len(log) > 0:
+          Player.stop()
           if Main.scripted_mode:
             log += 'END OF LOG'
             Output.say(log, type_of_msg=Output.NORMAL_EXTENDED)
@@ -2675,9 +2678,9 @@ class KeyBindings:
     '-': 'changespeed -10 then noecho updateplayer',
     'O': 'stop ; openinputfile',
     'o': 'openinputfile',
-    's': 'stop ; opensubst',
-    ':': 'stop ; opentransform',
-    '_': 'stop ; openmonfile',
+    's': 'opensubst',
+    ':': 'opentransform',
+    '_': 'openmonfile',
     'c': 'stop ; openshell',
     'L': 'reload',
     'C': 'checkfiles',
@@ -2801,6 +2804,7 @@ class Substitutions:
         s += substitution['rule'].definition + '\n'
       s += substitution['result']
       s += '\n\n'
+    Player.stop()
     if Main.scripted_mode:
       s += 'END OF LOG'
       Output.say(s, type_of_msg=Output.NORMAL_EXTENDED)
