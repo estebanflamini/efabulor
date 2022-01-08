@@ -103,6 +103,9 @@ DEFAULT_SPEED = 180
 MAXSPEED = 400
 MINSPEED = 10
 
+MACRO_QUIT_ASK = 'quit-ask'
+MACRO_QUIT_NOW = 'quit-now'
+
 def staticclass(cls):
   def raise_exc(msg): raise TypeError(msg)
   cls.__new__ = lambda *args: raise_exc('This class is uninstantiable by design.')
@@ -507,8 +510,13 @@ class Main:
 
     while True:
       if cls.scripted_mode:
+        parsed_command = None
         line = UserInput.readline(0.1)
-        parsed_command = Commands.parse(line)
+        if line:
+          if not (line.startswith('<') and line.endswith('>')):
+            Output.say(_('In this version, only calling macros (surrounded by <>) is allowed in scripted mode.'), type_of_msg=Output.ERROR)
+          else:
+            parsed_command = Commands.parse(line)
       else:
         ch = UserInput.getch(0.1)
         parsed_command = KeyBindings.get_parsed_command(ch)
@@ -883,6 +891,91 @@ class Commands:
 
   # This class does not need a lock, because all of its methods are only called from the main thread.
 
+  _macros = None
+
+  # Macros define a mapping from identifiers to (possibly compound) commands in the internal scripting language.
+
+  # The scripting language is still immature, so for the time being we will keep it undocumented and hidden from the end users.
+  # Macros allow us to do that, and at the same time they make it easier for the end users to modify the default key bindings
+  # without having to know anything about the scripting language.
+
+  # May I be honest with you? I created the scripting language to give users some flexibility to redefine the standard behaviour
+  # of the program (at least, the part of the program which responds to users’ keystrokes), but now I'm rather unsatisfied with
+  # my design. At this point, it is easier to add this macro-thing as a wrapper around it than to redesign it or remove it at once.
+
+  # By hiding the scripting language from the end users at this stage, I buy time to maybe find a better implementation, while
+  # still giving the users some freedom to reconfigure key bindings if they wish.
+
+  # Should I discover that no end users will ever need to use the scripting language, the macros also provide some kind of buffer,
+  # whereby the scripting language can be safely removed by providing hardcoded methods to implement the macros’ semantics.
+
+  # Meanwhile...
+
+  # In this version, only the program itself can define macros, and only macros can be bound to keystrokes in external key
+  # bindings files. (However, the program will try to interpret undefined macros as non-compound commands in the target scripting
+  # language. This is yet another hack, totally hidden from the user).
+
+  # In future versions, we might allow the user to define macros and/or bindings directly in the scripting language (once it and the
+  # underlying classes’ interfaces are better designed).
+
+  @classmethod # class Commands
+  #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
+  def _define_macros(cls):
+    # We put this code inside a method so we can call it after PlayerCommands (on which it depends) was defined.
+    # This is yet another hack, to avoid having to move code around.
+    cls._macros = {
+      MACRO_QUIT_NOW: 'stop ; ' + cls.QUIT_CMD,
+      MACRO_QUIT_ASK: 'stop ; ' + cls.ASK_N_QUIT_CMD,
+      'restart-and-stop': 'modifyopt stop-after-current-line true ; restart',
+      'stop-and-reset-pointer': 'stop ; resetpointer',
+      'first-stop': 'stop ; first',
+      'last-stop': 'stop ; last',
+      'next-stop': 'stop ; next',
+      'stop-or-previous': 'stoporprevious',
+      'toggle-stop-after-current-line': 'modifyopt stop-after-current-line',
+      'toggle-stop-after-each-line': 'modifyopt stop-after-each-line',
+      'toggle-apply-subst': 'modifyopt apply-subst then updateplayer',
+      'toggle-show-subst': 'modifyopt show-subst then showline',
+      'log-subst': 'logsubst',
+      'log-transform': 'logtransform',
+      'cycle-line-number': 'lineno ; showline',
+      'show-line': 'showline',
+      'search-plain-case-insensitive': 'noecho find %s %s then showline' % (PlayerCommands.SEARCH_PLAIN, PlayerCommands.SEARCH_CI),
+      'search-plain-case-sensitive': 'noecho find %s %s then showline' % (PlayerCommands.SEARCH_PLAIN, PlayerCommands.SEARCH_CS),
+      'search-regex-case-insensitive': 'noecho find %s %s then showline' % (PlayerCommands.SEARCH_REGEX, PlayerCommands.SEARCH_CI),
+      'search-regex-case-sensitive': 'noecho find %s %s then showline' % (PlayerCommands.SEARCH_REGEX, PlayerCommands.SEARCH_CS),
+      'search': 'noecho find then showline',
+      'find-next': 'noecho findnext then showline',
+      'find-next-stop': 'noecho findnext then stop and showline',
+      'find-prev': 'noecho findprev then showline',
+      'find-prev-stop': 'noecho findprev then stop and showline',
+      'go-line': 'goline',
+      'prev-change': 'noecho noupdateplayer goprevchange then modifyopt stop-after-current-line true and restart',
+      'next-change': 'noecho noupdateplayer gonextchange then modifyopt stop-after-current-line true and restart',
+      'random': 'noecho noupdateplayer gorandom ; modifyopt stop-after-current-line true ; restart',
+      'faster': 'changespeed +10 then noecho updateplayer',
+      'slower': 'changespeed -10 then noecho updateplayer',
+      'open-input-file': 'openinputfile',
+      'open-input-file-stop': 'stop ; openinputfile',
+      'open-subst': 'opensubst',
+      'open-transform': 'opentransform',
+      'open-monitored-file': 'openmonfile',
+      'open-shell': 'stop ; openshell',
+      'check-files': 'checkfiles',
+      'choose-tracking-mode': 'stop ; modifyopt tracking-mode',
+      'choose-sequence-mode': 'stop ; modifyopt sequence-mode',
+      'choose-feedback-mode': 'stop ; modifyopt feedback-mode',
+      'internal-shell': 'stop ; cmd',
+      'special-mode': 'stop ; modifyopt tracking-mode forward ; modifyopt feedback-mode full ; modifyopt stop-after-each-line true',
+      'normal-mode':
+        'stop ; modifyopt tracking-mode backward ; modifyopt feedback-mode minimum ; modifyopt stop-after-each-line false',
+      'show-input-cmd-stop': 'stop ; showinputcmd',
+      'show-input-cmd': 'showinputcmd',
+    }
+    # Macro names which are identical to their assigned commands:
+    for m in ['toggle', 'restart', 'first', 'last', 'next', 'previous', 'reload']:
+      cls._macros[m] = m
+
   CMD_SEPARATOR_LOW = ';'
   CMD_SEPARATOR_HIGH = 'and'
   CMD_SEPARATOR_THEN = 'then'
@@ -893,6 +986,9 @@ class Commands:
 
   ASK_N_QUIT_CMD = 'quit'
   QUIT_CMD = 'QUIT'
+
+  # This is the internal scripting language. It is an experimental feature.
+  # Beware that it might change or be removed altogether in future versions, without previous notice.
 
   # Commands which can only be executed once the text has been read. I prefer to use lambdas even
   # when unnecessary for the sake of readability, and also because it allows moving this code around
@@ -947,6 +1043,7 @@ class Commands:
 
   MALFORMED_COMMAND = _('The following command is wrong: %s. Reported error is: %s.')
   WRONG_COMMAND = _('The following command is wrong: %s')
+  WRONG_MACRO = _('The following macro/action is wrong: <%s>')
   UNSUCCESFUL_COMMAND = _('The following command failed: %s. Reported error is: %s.')
 
   _separators = [CMD_SEPARATOR_LOW, CMD_SEPARATOR_HIGH, CMD_SEPARATOR_THEN, CMD_SEPARATOR_ONMOVETHEN]
@@ -965,8 +1062,16 @@ class Commands:
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def parse(cls, cmd):
     cmd = cmd.strip()
+
     if not cmd:
       return None
+
+    if cls._macros is None:
+      cls._define_macros()
+
+    if cmd.startswith('<') and cmd.endswith('>'): # Macro processing
+      return cls._parse_macro(cmd[1:-1])
+
     # The 'sh' command has to be parsed a little differently than the other commands.
     if cmd == 'sh':
       return ['sh']
@@ -980,6 +1085,14 @@ class Commands:
     except ValueError as e:
       Output.say(cls.MALFORMED_COMMAND % (cmd, e), type_of_msg=Output.ERROR)
       return None
+
+  @classmethod # class Commands
+  #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
+  def _parse_macro(cls, macro):
+    if macro in cls._macros:
+      return cls.parse(cls._macros[macro])
+    Output.say(cls.WRONG_MACRO % macro, type_of_msg=Output.ERROR)
+    return None
 
   @classmethod # class Commands
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
@@ -1561,6 +1674,7 @@ class NonPlayerCommands:
     msg += '\n' + _('Refer to the user manual for help on commands.')
     msg += '\n' + ('In command mode, some functionalities are suspended.')
     msg += ' ' + _('(For example, file monitoring and automatic line advancing.)')
+    msg += '\n' + _('WARNING: this is an experimental feature, not intended for normal users.')
     msg += '\n' + _('Press <Enter> when finished.')
     with Output.get_lock():
       Output.say(msg, type_of_msg=Output.INFO_EXTENDED)
@@ -2636,62 +2750,59 @@ class KeyBindings:
   # This class does not need a lock, because all of its methods are only called from the main thread.
 
   DEFAULT_BINDINGS = {
-    '\x03': 'stop ; ' + Commands.QUIT_CMD,
-    'q': 'stop ; ' + Commands.ASK_N_QUIT_CMD,
-    'Q': 'stop ; ' + Commands.QUIT_CMD,
-    ' ': 'toggle',
-    'a': 'restart',
-    'A': 'modifyopt stop-after-current-line true ; restart',
-    'x': 'stop ; resetpointer',
-    'V': 'stop ; first',
-    'v': 'first',
-    'M': 'stop ; last',
-    'm': 'last',
-    'N': 'stop ; next',
-    'n': 'next',
-    'B': 'stoporprevious',
-    'b': 'previous',
-    '.': 'modifyopt stop-after-current-line',
-    ',': 'modifyopt stop-after-each-line',
-    'S': 'modifyopt apply-subst then updateplayer',
-    'D': 'modifyopt show-subst then showline',
-    'U': 'stop ; logsubst',
-    'u': 'logsubst',
-    'J': 'stop ; logtransform',
-    'j': 'logtransform',
-    'l': 'lineno ; showline',
-    'w': 'showline',
-    'f': 'noecho find %s %s then showline' % (PlayerCommands.SEARCH_PLAIN, PlayerCommands.SEARCH_CI),
-    'F': 'noecho find %s %s then showline' % (PlayerCommands.SEARCH_PLAIN, PlayerCommands.SEARCH_CS),
-    'r': 'noecho find %s %s then showline' % (PlayerCommands.SEARCH_REGEX, PlayerCommands.SEARCH_CI),
-    'R': 'noecho find %s %s then showline' % (PlayerCommands.SEARCH_REGEX, PlayerCommands.SEARCH_CS),
-    '/': 'noecho find then showline',
-    't': 'noecho findnext then showline',
-    'T': 'noecho findnext then stop and showline',
-    'e': 'noecho findprev then showline',
-    'E': 'noecho findprev then stop and showline',
-    'g': 'goline',
-    '<': 'noecho noupdateplayer goprevchange then modifyopt stop-after-current-line true and restart',
-    '>': 'noecho noupdateplayer gonextchange then modifyopt stop-after-current-line true and restart',
-    '*': 'noecho noupdateplayer gorandom ; modifyopt stop-after-current-line true ; restart',
-    '+': 'changespeed +10 then noecho updateplayer',
-    '-': 'changespeed -10 then noecho updateplayer',
-    'O': 'stop ; openinputfile',
-    'o': 'openinputfile',
-    's': 'opensubst',
-    ':': 'opentransform',
-    '_': 'openmonfile',
-    'c': 'stop ; openshell',
-    'L': 'reload',
-    'C': 'checkfiles',
-    '?': 'stop ; modifyopt tracking-mode',
-    ')': 'stop ; modifyopt sequence-mode',
-    '=': 'stop ; modifyopt feedback-mode',
-    '!': 'stop ; cmd',
-    '0': 'stop ; modifyopt tracking-mode forward ; modifyopt feedback-mode full ; modifyopt stop-after-each-line true',
-    '1': 'stop ; modifyopt tracking-mode backward ; modifyopt feedback-mode minimum ; modifyopt stop-after-each-line false',
-    'I': 'stop ; showinputcmd',
-    'i': 'showinputcmd'
+    '\x03': '<%s>' % MACRO_QUIT_NOW,
+    'Q': '<%s>' % MACRO_QUIT_NOW,
+    'q': '<%s>' % MACRO_QUIT_ASK,
+    ' ': '<toggle>',
+    'a': '<restart>',
+    'A': '<restart-and-stop>',
+    'x': '<stop-and-reset-pointer>',
+    'V': '<first-stop>',
+    'v': '<first>',
+    'M': '<last-stop>',
+    'm': '<last>',
+    'N': '<next-stop>',
+    'n': '<next>',
+    'B': '<stop-or-previous>',
+    'b': '<previous>',
+    '.': '<toggle-stop-after-current-line>',
+    ',': '<toggle-stop-after-each-line>',
+    'S': '<toggle-apply-subst>',
+    'D': '<toggle-show-subst>',
+    'u': '<log-subst>',
+    'j': '<log-transform>',
+    'l': '<cycle-line-number>',
+    'w': '<show-line>',
+    'f': '<search-plain-case-insensitive>',
+    'F': '<search-plain-case-sensitive>',
+    'r': '<search-regex-case-insensitive>',
+    'R': '<search-regex-case-sensitive>',
+    '/': '<search>',
+    't': '<find-next>',
+    'T': '<find-next-stop>',
+    'e': '<find-prev>',
+    'E': '<find-prev-stop>',
+    'g': '<go-line>',
+    '<': '<prev-change>',
+    '>': '<next-change>',
+    '*': '<random>',
+    '+': '<faster>',
+    '-': '<slower>',
+    'o': '<open-input-file>',
+    'O': '<open-input-file-stop>',
+    's': '<open-subst>',
+    ':': '<open-transform>',
+    '_': '<open-monitored-file>',
+    'c': '<open-shell>',
+    'L': '<reload>',
+    'C': '<check-files>',
+    '?': '<choose-tracking-mode>',
+    ')': '<choose-sequence-mode>',
+    '=': '<choose-feedback-mode>',
+    '0': '<special-mode>',
+    '1': '<normal-mode>',
+    'I': '<show-input-cmd-stop>',
+    'i': '<show-input-cmd>'
   }
 
   _bindings = DEFAULT_BINDINGS
@@ -3557,25 +3668,29 @@ class CmdLineArgs:
     bindings = {}
 
     while True:
-      Output.say(_('Enter a command, or press <Enter> to end.'), type_of_msg=Output.INTERACTION)
+      Output.say(_('Enter an action, or press <Enter> to end.'), type_of_msg=Output.INTERACTION)
       cmd = UserInput.readline().strip()
       Output.separate(Output.INTERACTION)
 
       if not cmd:
         break
 
+      if not (cmd.startswith('<') and cmd.endswith('>')):
+        Output.say(_('Only actions surrounded by brackets (<>) are allowed in this version.'), type_of_msg=Output.ERROR)
+        continue
+
       parsed_command = Commands.parse(cmd)
       if not parsed_command:
-        Output.say(_('The command is wrong. Check the manual for proper syntax.'), type_of_msg=Output.ERROR)
+        Output.say(_('The action is wrong. Check the manual for proper syntax.'), type_of_msg=Output.ERROR)
         time.sleep(1)
         continue
 
-      Output.say(_('Press the key you want to associate with the command.'), type_of_msg=Output.INTERACTION)
+      Output.say(_('Press the key you want to associate with the action.'), type_of_msg=Output.INTERACTION)
 
       key = UserInput.getch()
       key = repr(key).strip("'")
       key = key.replace(' ', r'\x20')
-      Output.say(_('Keystroke %s will be associated with command: %s') % (key, cmd), type_of_msg=Output.INTERACTION)
+      Output.say(_('Keystroke %s will be associated with action: %s') % (key, cmd), type_of_msg=Output.INTERACTION)
       bindings[key] = cmd
 
     if bindings:
@@ -3788,11 +3903,14 @@ class CmdLineArgs:
         binding = binding.strip()
         m = re.match(r'^\s*(\S+)\s+(.+)\s*$', binding)
         if not m:
-          cls._report_key_binding_error(_('Missing command in the following keystroke configuration: %s') % binding, args)
+          cls._report_key_binding_error(_('Missing action in the following keystroke configuration: %s') % binding, args)
         key = translate_control_chars(m.group(1))
         value = m.group(2)
+        if not (value.startswith('<') and value.endswith('>')): # In this version, we only allow macros in key conf. files
+          cls._report_key_binding_error(_('The following action name must be surrounded by simple brackets (<>): %s') % value, args)
         if key in _processed_bindings:
-          cls._report_key_binding_error(_('The following keystroke appears more than once in the configuration file: %s') % key, args)
+          cls._report_key_binding_error(_('The following keystroke appears more than once in the configuration file: %s') % key,
+                                        args)
         else:
           _processed_bindings.append(key)
         if key in key_bindings:
@@ -3802,11 +3920,12 @@ class CmdLineArgs:
     for key, binding in key_bindings.items():
       parsed_command = Commands.parse(binding)
       if not parsed_command:
-        cls._report_key_binding_error(_('The following command is wrong: %s') % binding, args)
+        cls._report_key_binding_error(_('The following action is wrong: %s') % binding, args)
       elif Commands.contains_quit(parsed_command):
         binding_for_quit = True
     if not binding_for_quit:
-      cls._report_key_binding_error(_("A keystroke must be configured for the '%s' or '%s' command.") % (Commands.ASK_N_QUIT_CMD, Commands.QUIT_CMD), args)
+      cls._report_key_binding_error(_("A keystroke must be configured for the '%s' or '%s' action.") % (MACRO_QUIT_ASK,
+                                                                                                        MACRO_QUIT_NOW), args)
     KeyBindings.set(key_bindings)
 
   DEFAULT_KEY_BINDINGS_FILE = sys.path[0] + '/%s.key' % PROGNAME
