@@ -1731,7 +1731,7 @@ class SpokenFeedback:
    'file-changed-again': FULL_FEEDBACK,
    'combining-changes': FULL_FEEDBACK,
    'blank-areas-changed': FULL_FEEDBACK,
-   'newline-count-changed': FULL_FEEDBACK}
+   }
 
   _messages = {}
 
@@ -2132,7 +2132,6 @@ class TextVersions:
 
   _input_lines_changed = False
   _blank_areas_changed = False
-  _newline_count_changed = False
   _newlen = None
   _modified_lines = []
   _spoken_feedback = []
@@ -2169,7 +2168,6 @@ class TextVersions:
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def _compute_changes(cls, text, lines):
     cls._blank_areas_changed = cls._compare_blank_areas(text, cls._registered_text)
-    cls._newline_count_changed = text.count('\n') != cls._registered_text.count('\n')
     cls._newlen = len(lines)
     cls._modified_lines = cls._compare_lines(lines, cls._registered_lines)
 
@@ -2215,8 +2213,6 @@ class TextVersions:
         return
       if cls._blank_areas_changed:
         Output.say(_('Blank areas of the input file have changed.'), type_of_msg=Output.INFO)
-      if cls._newline_count_changed:
-        Output.say(_('Newline characters have been added or deleted in the input file.'), type_of_msg=Output.INFO)
       if cls._newlen < cls._registered_len:
         Output.say(_('The text was shortened from %s to %s line(s).') % (cls._registered_len, cls._newlen),
                    type_of_msg=Output.INFO)
@@ -2277,8 +2273,6 @@ class TextVersions:
       return cls._spoken_feedback
     if cls._blank_areas_changed:
       SpokenFeedback.append_message(cls._spoken_feedback, 'blank-areas-changed')
-    if cls._newline_count_changed:
-      SpokenFeedback.append_message(cls._spoken_feedback, 'newline-count-changed')
     if cls._newlen < cls._registered_len:
       SpokenFeedback.append_message(cls._spoken_feedback, 'file-decreased')
       if cls._newlen <= cls._player_was_at_line:
