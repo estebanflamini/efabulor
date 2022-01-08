@@ -952,7 +952,8 @@ class Commands:
       'go-line': 'goline',
       'prev-change': 'noecho noupdateplayer goprevchange then modifyopt stop-after-current-line true and restart',
       'next-change': 'noecho noupdateplayer gonextchange then modifyopt stop-after-current-line true and restart',
-      'random': 'noecho noupdateplayer gorandom ; modifyopt stop-after-current-line true ; restart',
+      'random': 'noinfo modifyopt stop-after-current-line false ; noecho noupdateplayer gorandom ; ' +
+                'modifyopt stop-after-current-line true ; restart',
       'faster': 'changespeed +10 then noecho updateplayer',
       'slower': 'changespeed -10 then noecho updateplayer',
       'open-input-file': 'openinputfile',
