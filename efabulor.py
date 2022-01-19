@@ -3972,7 +3972,7 @@ class CmdLineArgs:
         try:
           # Sanitizing args.file is not necessary, provided the command is given as an array. Be VERY careful to provide
           # sanitization in case you make the following call through a shell.
-          mt = subprocess.run(['mimetype', '-b', args.file], text=True, capture_output=True, check=True).stdout.strip()
+          mt = subprocess.run(['mimetype', '-b', '-L', args.file], text=True, capture_output=True, check=True).stdout.strip()
         except Exception as e:
           Output.report_error(e)
           Output.say(_('The program could not determine the mimetype of the file: %s') % args.file, type_of_msg=Output.ERROR)

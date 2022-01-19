@@ -128,7 +128,7 @@ def mimetype(f):
   if PLATFORM == 'Linux':
     try:
       # TODO: portability issue
-      mt = subprocess.check_output(['mimetype', '-b', f], text=True, stderr=subprocess.STDOUT).strip()
+      mt = subprocess.check_output(['mimetype', '-b', '-L', f], text=True, stderr=subprocess.STDOUT).strip()
       return mt
     except Exception as e:
       if isinstance(e, subprocess.CalledProcessError):
