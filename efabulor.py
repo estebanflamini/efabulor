@@ -1991,7 +1991,7 @@ class InputTextLoader:
     elif cls._segmenting_regex:
       lines = re.findall(cls._segmenting_regex, text)
       if lines and isinstance(lines[0], tuple):
-        lines = [x[0] for x in lines]
+        lines = [x for sublist in lines for x in sublist]
       return lines
     else:
       return text.split('\n')
