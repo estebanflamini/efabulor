@@ -2849,10 +2849,13 @@ class Substitutions:
 
   _rules = []
   _hist = []
+  _loaded = False
 
   @classmethod # class Substitutions
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
-  def load(cls):
+  def load(cls, force=False):
+    if cls._loaded and not force:
+      return
     cls._rules = []
     for filename in cls._rule_files:
       try:
@@ -2861,16 +2864,18 @@ class Substitutions:
       except Exception as e:
         with Output.get_lock():
           Output.report_error(e)
-          Output.say(_('The program cannot open substitution file: %s.') % filename, type_of_msg=Output.ERROR)
+          Output.say(_('An error has occurred while trying to read substitution rules file: %s.') % filename,
+                     type_of_msg=Output.ERROR)
           Output.say(_('The substitution file (%s) will not be applied.') % filename, type_of_msg=Output.INFO)
         continue
       efabrules.process_rules(filename, content, cls._rules)
+    cls._loaded = True
 
   @classmethod # class Substitutions
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def reload(cls):
     Output.say(_('New substitutions were loaded.'), type_of_msg=Output.INFO)
-    cls.load()
+    cls.load(force=True)
     Main.event(Main.NEW_SUBSTITUTIONS_LOADED)
 
   @classmethod # class Substitutions
