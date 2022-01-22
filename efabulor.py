@@ -2861,6 +2861,11 @@ class Substitutions:
       try:
         with open(filename, 'r', encoding=CONFIG_ENCODING) as f:
           content = f.read()
+          # This will be removed if and when I implement protection rules directly within efabrules.
+          # (Currently, protection rules are implemented within efabtrans.)
+          m = re.search(r'^\s*(\[[^[].*\])\s*$', content, flags=re.MULTILINE)
+          if m:
+            raise Exception(_('Substitution rules cannot contain sections in this version: %s.') % m.group(1))
       except Exception as e:
         with Output.get_lock():
           Output.report_error(e)
