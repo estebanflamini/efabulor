@@ -3824,7 +3824,7 @@ class CmdLineArgs:
     voices = []
     if args.voice:
       voices = [args.voice]
-    elif False and cls._voice is not None:
+    elif cls._voice is not None:
       voices = [cls._voice]
     else:
       try:
