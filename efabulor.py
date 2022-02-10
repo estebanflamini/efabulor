@@ -1729,7 +1729,6 @@ class SpokenFeedback:
    'file-too-short': FULL_FEEDBACK,
    'file-is-empty': FULL_FEEDBACK,
    'file-changed-again': FULL_FEEDBACK,
-   'combining-changes': FULL_FEEDBACK,
    'blank-areas-changed': FULL_FEEDBACK,
    }
 
@@ -2267,7 +2266,6 @@ class TextVersions:
     cls._spoken_feedback = []
     if cls._changed_again:
       SpokenFeedback.append_message(cls._spoken_feedback, 'file-changed-again')
-      SpokenFeedback.append_message(cls._spoken_feedback, 'combining-changes')
     if cls._newlen == 0:
       SpokenFeedback.append_message(cls._spoken_feedback, 'file-is-empty')
       return cls._spoken_feedback
