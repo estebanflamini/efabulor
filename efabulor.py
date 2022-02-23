@@ -960,7 +960,7 @@ class Commands:
       'open-input-file-stop': 'stop ; openinputfile',
       'open-subst': 'opensubst',
       'open-transform': 'opentransform',
-      'open-monitored-file': 'openmonfile',
+      'open-cl-monitored-file': 'openclmonfile',
       'open-shell': 'stop ; openshell',
       'check-files': 'checkfiles',
       'choose-tracking-mode': 'stop ; modifyopt tracking-mode',
@@ -1029,11 +1029,12 @@ class Commands:
     'openshell'     : lambda:    NonPlayerCommands.open_shell(),
     'openfile'      : lambda x:  NonPlayerCommands.open_file(x),
     'openinputfile' : lambda:    NonPlayerCommands.open_input_file(),
-    'opentransform' : lambda:    NonPlayerCommands.choose_and_open_file(InputTextLoader.transformation_rule_files(),
-                                                                        _('No transformation rules were given.')),
-    'opensubst'     : lambda:    NonPlayerCommands.choose_and_open_file(Substitutions.rule_files(),
-                                                                        _('No substitution rules were given.')),
-    'openmonfile'   : lambda:    NonPlayerCommands.choose_and_open_file(FileMonitor.files()),
+    'opentransform' : lambda:    NonPlayerCommands.choose_and_open_file(
+      InputTextLoader.transformation_rule_files(), _('No transformation rules were given.')),
+    'opensubst'     : lambda:    NonPlayerCommands.choose_and_open_file(
+      Substitutions.rule_files(), _('No substitution rules were given.')),
+    'openclmonfile' : lambda:    NonPlayerCommands.choose_and_open_file(
+      CmdLineArgs.monitored_files(), _('No command-line monitored files were given.')),
     'showinputcmd'  : lambda:    NonPlayerCommands.show_input_command(),
     'info'          : lambda *x: Output.say(' '.join(x), type_of_msg=Output.INFO),
     'pause'         : lambda *x: Main.pause(int(x[0]) if x else RuntimeOptions.pause_before()),
@@ -1050,11 +1051,12 @@ class Commands:
   _separators = [CMD_SEPARATOR_LOW, CMD_SEPARATOR_HIGH, CMD_SEPARATOR_THEN, CMD_SEPARATOR_ONMOVETHEN]
   _prefixes = [CMD_PREFIX_NOECHO, CMD_PREFIX_NOINFO, CMD_PREFIX_NOUPDATEPLAYER]
 
-  _commands_with_no_args = ['toggle', 'restart', 'stop', 'resetpointer', 'updateplayer', 'first', 'last', 'next', 'previous',
-                            'stoporprevious', 'logsubst', 'logtransform', 'lineno', 'showline', 'findnext', 'findprev',
-                            'reload', 'goprevchange', 'gonextchange', 'gorandom', 'checkfiles', 'openinputfile',
-                            'opentransform', 'opensubst', 'openmonfile', 'openshell', 'showinputcmd',
-                            'cmd', ASK_N_QUIT_CMD, QUIT_CMD,]
+  _commands_with_no_args = ['toggle', 'restart', 'stop', 'resetpointer', 'updateplayer', 'first',
+                            'last', 'next', 'previous', 'stoporprevious', 'logsubst', 'logtransform',
+                            'lineno', 'showline', 'findnext', 'findprev', 'reload', 'goprevchange',
+                            'gonextchange', 'gorandom', 'checkfiles', 'openinputfile', 'opentransform',
+                            'opensubst', 'openclmonfile', 'openshell', 'showinputcmd', 'cmd',
+                            ASK_N_QUIT_CMD, QUIT_CMD,]
 
   _commands_with_or_without_args = ['find', 'goline', 'pause', 'sh']
   _commands_which_accept_an_int = ['goline', 'pause', 'changespeed']
@@ -2785,7 +2787,7 @@ class KeyBindings:
     'O': '<open-input-file-stop>',
     's': '<open-subst>',
     ':': '<open-transform>',
-    '_': '<open-monitored-file>',
+    '_': '<open-cl-monitored-file>',
     'c': '<open-shell>',
     'L': '<reload>',
     'C': '<check-files>',
@@ -3952,6 +3954,7 @@ class CmdLineArgs:
   _input_command = None
   _input_file = None
   _monitored_files = []
+  _command_line_monitored_files = []
   _transformation_log_command = None
 
   # If you modify this method, be VERY careful to ensure input_command is sanitized (shlex.quote where appropriate),
@@ -4026,9 +4029,15 @@ class CmdLineArgs:
       for fn in args.monitored_file:
         cls._check_file_validity(fn, allow_dir=True)
         if not fn in cls._monitored_files:
+          cls._command_line_monitored_files.append(fn)
           cls._monitored_files.append(fn)
         else:
           Main.terminate(_('The file %s does not exist.') % fn)
+
+  @classmethod # class CmdLineArgs
+  #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
+  def monitored_files(cls):
+    return cls._command_line_monitored_files
 
   WRONG_SEPARATOR_REGEX = _('Wrong regular expression given for separator: %s')
   UNTERMINATED_SEPARATOR_REGEX = _('Unterminated regular expression given for separator: %s')
