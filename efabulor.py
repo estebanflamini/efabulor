@@ -69,7 +69,10 @@ PLATFORM = platform.system()
 
 if PLATFORM in ['Linux', 'Darwin']: # We will think positive, and assume this will run under macOS and related OSs.
   import termios
-  import readline
+  try:
+    import readline
+  except ModuleNotFoundError:
+    pass
   import select
   LINUX = True
   WINDOWS = False
