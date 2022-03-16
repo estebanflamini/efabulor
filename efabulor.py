@@ -56,6 +56,8 @@ PROGNAME = 'efabulor'
 EFABTRANS = sys.path[0] + '/efabtrans.py'
 EFABCONV = sys.path[0] + '/efabconv.py'
 
+locale.setlocale(locale.LC_ALL, '')
+
 # Localisation should be easy
 DOMAIN = 'efabulor'
 if 'TEXTDOMAINDIR' in os.environ and gettext.find(DOMAIN, os.environ['TEXTDOMAINDIR']):
@@ -2091,7 +2093,8 @@ class FileMonitor:
             mtime = os.path.getmtime(f)
             if mtime != cls._modification_times[f]:
               cls._modification_times[f] = mtime
-              Output.say(_('Modification time changed: %s.') % f, type_of_msg=Output.INFO)
+              Output.say(_('Modification time changed: %s (%s).') %
+                         (f, time.strftime("%X", time.localtime(mtime))), type_of_msg=Output.INFO)
               change_detected = True
           except IOError as e:
             with Output.get_lock():
