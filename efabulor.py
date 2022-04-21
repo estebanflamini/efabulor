@@ -3395,7 +3395,7 @@ class CmdLineArgs:
   SCRIPTED_MODE_SWITCH = '--scripted-mode'
   KEY_BINDINGS_SWITCH = '--key-bindings'
   SAVE_KEY_BINDINGS_SWITCH = '--save-default-key-bindings'
-  EDIT_KEYCODES_SWITCH = '--edit-keycodes'
+  EDIT_KEY_BINDINGS_SWITCH = '--edit-key-bindings'
   PAUSE_BEFORE_SWITCH = '--pause-before'
   PAUSE_BETWEEN_SWITCH = '--pause-between'
   LEFT_INDENT_SWITCH = '--left-indent'
@@ -3413,8 +3413,8 @@ class CmdLineArgs:
     if args.save_default_key_bindings:
       cls._save_default_key_bindings(args)
 
-    if args.edit_keycodes:
-      cls._edit_keycodes(args)
+    if args.edit_key_bindings:
+      cls._edit_key_bindings(args)
 
     if args.monitoring_interval <= 0:
       Main.terminate(_('The monitoring interval must be an integer greater than zero.'))
@@ -3557,7 +3557,7 @@ class CmdLineArgs:
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-K', cls.SAVE_KEY_BINDINGS_SWITCH, nargs="?", const="-", default=None,
                        metavar=_('<file where the default configuration for keystrokes will be saved>'))
-    group.add_argument(cls.EDIT_KEYCODES_SWITCH, nargs="?", const="-", default=None,
+    group.add_argument(cls.EDIT_KEY_BINDINGS_SWITCH, nargs="?", const="-", default=None,
                        metavar=_('<file where the default configuration for keystrokes will be saved/appended>'))
     group.add_argument('--do', metavar=_('<command to create text to be read> %s') % cls._SECURITY_WARNING)
     group.add_argument('file', nargs='?', metavar=_('<file to be read>'))
@@ -3653,14 +3653,14 @@ class CmdLineArgs:
 
   @staticmethod # class CmdLineArgs
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
-  def _edit_keycodes(args):
+  def _edit_key_bindings(args):
 
     if args.scripted_mode:
-      Main.terminate(_('%s and %s cannot be set at the same time.') % (SCRIPTED_MODE_SWITCH, EDIT_KEYCODES_SWITCH))
+      Main.terminate(_('%s and %s cannot be set at the same time.') % (SCRIPTED_MODE_SWITCH, EDIT_KEY_BINDINGS_SWITCH))
     if args.key_bindings:
-      Main.terminate(_('%s and %s cannot be set at the same time.') % (KEY_BINDINGS_SWITCH, EDIT_KEYCODES_SWITCH))
+      Main.terminate(_('%s and %s cannot be set at the same time.') % (KEY_BINDINGS_SWITCH, EDIT_KEY_BINDINGS_SWITCH))
 
-    filename = args.edit_keycodes
+    filename = args.edit_key_bindings
     do_append = False
     if filename != '-' and os.path.exists(filename):
       if os.path.isfile(filename):
