@@ -3545,9 +3545,11 @@ class CmdLineArgs:
                         metavar=_('<how many spaces>'))
     parser.add_argument('--window-width-adjustment', nargs='?', default=1 if WINDOWS else 0,
                         type=int, choices=[0, 1], help=_('Default is 1 in Windows, 0 in Linux.'))
-    parser.add_argument('-k', cls.KEY_BINDINGS_SWITCH, default=None,
+    key_binding_options = parser.add_mutually_exclusive_group(required=False)
+    key_binding_options.add_argument('-k', cls.KEY_BINDINGS_SWITCH, default=None,
                         metavar=_('<configuration file for converting keystrokes to commands> %s') % cls._SECURITY_WARNING)
-    parser.add_argument('--add-key-bindings', action='store_true', default=False)
+    key_binding_options.add_argument('--add-key-bindings', default=None,
+                        metavar=_('<additive configuration file for converting keystrokes to commands> %s') % cls._SECURITY_WARNING)
     parser.add_argument('--opt', default='',
                         metavar=_('<options that will be passed to espeak> %s') % cls._SECURITY_WARNING,
                         help=_('This option must use the following syntax: %s') % "--opt='-opt1 -opt2 ...")
@@ -3895,7 +3897,7 @@ class CmdLineArgs:
   @classmethod # class CmdLineArgs
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def _set_key_bindings(cls, args):
-    filename = args.key_bindings or cls._get_default_key_bindings_file()
+    filename = args.key_bindings or args.add_key_bindings or cls._get_default_key_bindings_file()
     if not filename:
       key_bindings = KeyBindings.DEFAULT_BINDINGS
     else:
@@ -3906,7 +3908,7 @@ class CmdLineArgs:
       _bindings = [x for x in _bindings if x]
       _bindings = [x for x in _bindings if not x.startswith('#')]
       _processed_bindings = []
-      if args.add_key_bindings:
+      if args.add_key_bindings is not None:
         key_bindings = KeyBindings.DEFAULT_BINDINGS
       else:
         key_bindings = {}
