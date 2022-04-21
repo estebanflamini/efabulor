@@ -557,7 +557,7 @@ class Main:
             text_is_not_loaded_yet = False
             Player.line_number(RuntimeOptions.sequence_mode().first(), showline=False)
             FileMonitor.start()
-            if RuntimeOptions.sequence_mode() is SEQUENCE_CHANGES:
+            if RuntimeOptions.sequence_mode() is SEQUENCE_MODIFIED:
               Output.say(_('Waiting for changes.'), type_of_msg=Output.INFO)
             else:
               cls.pause(RuntimeOptions.pause_before())
@@ -1501,29 +1501,29 @@ class PlayerCommands:
   def go_modified(cls, forward=True):
     modified_lines = TextVersions.modified_lines()
     if not modified_lines:
-      Output.say(SEQUENCE_CHANGES.msg_empty, type_of_msg=Output.INFO)
+      Output.say(SEQUENCE_MODIFIED.msg_empty, type_of_msg=Output.INFO)
       return False
     if forward:
-      if SEQUENCE_CHANGES.eof():
+      if SEQUENCE_MODIFIED.eof():
         if Player.line_number() == modified_lines[-1]:
-          Output.say(SEQUENCE_CHANGES.msg_eof, type_of_msg=Output.INFO)
+          Output.say(SEQUENCE_MODIFIED.msg_eof, type_of_msg=Output.INFO)
         else:
           Output.say(_('There are no modified lines after this one.'), type_of_msg=Output.INFO)
         return False
       else:
         Output.say(_('Skipping to the next modified line.'), type_of_msg=Output.INFO)
-        Player.line_number(SEQUENCE_CHANGES.next())
+        Player.line_number(SEQUENCE_MODIFIED.next())
         return True
     else:
-      if SEQUENCE_CHANGES.bof():
+      if SEQUENCE_MODIFIED.bof():
         if Player.line_number() == modified_lines[0]:
-          Output.say(SEQUENCE_CHANGES.msg_bof, type_of_msg=Output.INFO)
+          Output.say(SEQUENCE_MODIFIED.msg_bof, type_of_msg=Output.INFO)
         else:
           Output.say(_('There are no modified lines before this one.'), type_of_msg=Output.INFO)
         return False
       else:
         Output.say(_('Skipping to the previous modified line.'), type_of_msg=Output.INFO)
-        Player.line_number(SEQUENCE_CHANGES.previous())
+        Player.line_number(SEQUENCE_MODIFIED.previous())
         return True
 
   @staticmethod # class PlayerCommands
@@ -2201,7 +2201,7 @@ class TextVersions:
         modified_lines.extend(range(x[1], x[2]))
     if cls._newlen < cls._registered_len:
       modified_lines = [n for n in modified_lines if n < cls._newlen]
-    if RuntimeOptions.sequence_mode() is SEQUENCE_CHANGES:
+    if RuntimeOptions.sequence_mode() is SEQUENCE_MODIFIED:
       # cls._modified_lines still contains the list of modified lines from the previous text's version.
       tmp_modified_lines = [x for x in cls._modified_lines if x > cls._player_was_at_line and x < cls._newlen]
       if tmp_modified_lines:
@@ -2306,7 +2306,7 @@ class TextVersions:
     new_line_number = cls._new_line_number()
     if RuntimeOptions.tracking_mode() == cls.RESTART_FROM_BEGINNING and new_line_number is not None:
       SpokenFeedback.append_message(cls._spoken_feedback, 'starting-again')
-    elif RuntimeOptions.sequence_mode() is SEQUENCE_CHANGES and Player.never_said_anything():
+    elif RuntimeOptions.sequence_mode() is SEQUENCE_MODIFIED and Player.never_said_anything():
       pass
     elif new_line_number is None:
       if cls._spoken_feedback and cls._restart_player_after_playing_feedback:
@@ -2318,7 +2318,7 @@ class TextVersions:
         SpokenFeedback.append_message(cls._spoken_feedback, 'restarting')
       elif new_line_number == cls._player_was_at_line + 1 and cls._player_was_at_eol:
         SpokenFeedback.append_message(cls._spoken_feedback, 'continuing')
-      elif RuntimeOptions.sequence_mode() is SEQUENCE_CHANGES and new_line_number == cls._player_was_at_line + 1 and \
+      elif RuntimeOptions.sequence_mode() is SEQUENCE_MODIFIED and new_line_number == cls._player_was_at_line + 1 and \
           new_line_number == cls._modified_lines[0]:
         SpokenFeedback.append_message(cls._spoken_feedback, 'continuing')
       elif RuntimeOptions.tracking_mode() == cls.FORWARD_TRACKING:
@@ -2341,7 +2341,7 @@ class TextVersions:
         return None if cls._newlen <= cls._registered_len else cls._registered_len
       return None
     elif RuntimeOptions.tracking_mode() == cls.FORWARD_TRACKING:
-      if RuntimeOptions.sequence_mode() is SEQUENCE_CHANGES and modified_lines[0] > cls._player_was_at_line \
+      if RuntimeOptions.sequence_mode() is SEQUENCE_MODIFIED and modified_lines[0] > cls._player_was_at_line \
           and Player.running_and_not_paused():
         return None
       return modified_lines[0]
@@ -2626,7 +2626,7 @@ class SEQUENCE_NORMAL:
     n = Player.line_number()
     return n - 1 if n else 0
 
-class SEQUENCE_CHANGES:
+class SEQUENCE_MODIFIED:
 
   msg_bof = _('This is the first modified line.')
   msg_eof = _('This is the last modified line.')
@@ -2634,43 +2634,43 @@ class SEQUENCE_CHANGES:
   msg_last = _('Jumping forward to the last modified line.')
   msg_empty = _('There are no modified lines.')
 
-  @staticmethod # class SEQUENCE_CHANGES
+  @staticmethod # class SEQUENCE_MODIFIED
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def empty():
     return len(TextVersions.modified_lines()) == 0
 
-  @staticmethod # class SEQUENCE_CHANGES
+  @staticmethod # class SEQUENCE_MODIFIED
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def first():
     m = TextVersions.modified_lines()
     return m[0] if m else SEQUENCE_NORMAL.first()
 
-  @staticmethod # class SEQUENCE_CHANGES
+  @staticmethod # class SEQUENCE_MODIFIED
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def last():
     m = TextVersions.modified_lines()
     return m[-1] if m else SEQUENCE_NORMAL.last()
 
-  @staticmethod # class SEQUENCE_CHANGES
+  @staticmethod # class SEQUENCE_MODIFIED
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def bof():
     m = TextVersions.modified_lines()
     return not m or Player.line_number() <= m[0]
 
-  @staticmethod # class SEQUENCE_CHANGES
+  @staticmethod # class SEQUENCE_MODIFIED
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def eof():
     m = TextVersions.modified_lines()
     return not m or Player.line_number() >= m[-1]
 
-  @staticmethod # class SEQUENCE_CHANGES
+  @staticmethod # class SEQUENCE_MODIFIED
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def next():
     n = Player.line_number()
     tmp = [x for x in TextVersions.modified_lines() if x > n] + [n]
     return tmp[0]
 
-  @staticmethod # class SEQUENCE_CHANGES
+  @staticmethod # class SEQUENCE_MODIFIED
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def previous():
     n = Player.line_number()
@@ -3282,7 +3282,7 @@ class RuntimeOptions:
   _tracking_mode = TextVersions.BACKWARD_TRACKING
 
   SEQUENCE_OPTIONS = {'normal': SEQUENCE_NORMAL,
-                      'changes': SEQUENCE_CHANGES,
+                      'modified': SEQUENCE_MODIFIED,
                       'random': SEQUENCE_RANDOM}
   SEQUENCE_OPTIONS_REV = {v: k for k, v in SEQUENCE_OPTIONS.items()}
 
@@ -3349,7 +3349,7 @@ class RuntimeOptions:
       if say_it:
         Output.say(_('Sequence mode set to: %s.') % name, type_of_msg=Output.INFO)
       if adjust_tracking_mode and \
-           mode in [SEQUENCE_CHANGES, SEQUENCE_RANDOM] and \
+           mode in [SEQUENCE_MODIFIED, SEQUENCE_RANDOM] and \
            cls._tracking_mode != TextVersions.FORWARD_TRACKING:
         cls._set_tracking_mode(TextVersions.FORWARD_TRACKING, say_it, adjust_sequence_mode=False)
     else:
