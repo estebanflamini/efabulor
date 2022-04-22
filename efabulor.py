@@ -3392,14 +3392,17 @@ class CmdLineArgs:
   # This class does not need a lock, because all of its methods are only called from the main thread.
 
   # If you change these constants, all corresponding occurrences of args.* need to be changed too
-  SCRIPTED_MODE_SWITCH = '--scripted-mode'
+  SCRIPTED_MODE_SWITCH = '--scripted'
   KEY_BINDINGS_SWITCH = '--key-bindings'
+  ADD_KEY_BINDINGS_SWITCH = '--add-key-bindings'
   SAVE_KEY_BINDINGS_SWITCH = '--save-default-key-bindings'
   EDIT_KEY_BINDINGS_SWITCH = '--edit-key-bindings'
   PAUSE_BEFORE_SWITCH = '--pause-before'
   PAUSE_BETWEEN_SWITCH = '--pause-between'
   LEFT_INDENT_SWITCH = '--left-indent'
   RIGHT_INDENT_SWITCH = '--right-indent'
+
+  WRONG_OPTION_COMBINATION_MSG = _('%s and %s cannot be used at the same time.')
 
   @classmethod # class CmdLineArgs
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
@@ -3545,22 +3548,22 @@ class CmdLineArgs:
                         metavar=_('<how many spaces>'))
     parser.add_argument('--window-width-adjustment', nargs='?', default=1 if WINDOWS else 0,
                         type=int, choices=[0, 1], help=_('Default is 1 in Windows, 0 in Linux.'))
-    key_binding_options = parser.add_mutually_exclusive_group(required=False)
-    key_binding_options.add_argument('-k', cls.KEY_BINDINGS_SWITCH, default=None,
+    group1 = parser.add_mutually_exclusive_group(required=False)
+    group1.add_argument('-k', cls.KEY_BINDINGS_SWITCH, default=None,
                         metavar=_('<configuration file for converting keystrokes to commands> %s') % cls._SECURITY_WARNING)
-    key_binding_options.add_argument('--add-key-bindings', default=None,
+    group1.add_argument(cls.ADD_KEY_BINDINGS_SWITCH, default=None,
                         metavar=_('<additive configuration file for converting keystrokes to commands> %s') % cls._SECURITY_WARNING)
+    group1.add_argument(cls.SCRIPTED_MODE_SWITCH, action='store_true', default=False)
     parser.add_argument('--opt', default='',
                         metavar=_('<options that will be passed to espeak> %s') % cls._SECURITY_WARNING,
                         help=_('This option must use the following syntax: %s') % "--opt='-opt1 -opt2 ...")
-    parser.add_argument(cls.SCRIPTED_MODE_SWITCH, action='store_true', default=False)
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('-K', cls.SAVE_KEY_BINDINGS_SWITCH, nargs="?", const="-", default=None,
+    group2 = parser.add_mutually_exclusive_group(required=True)
+    group2.add_argument('-K', cls.SAVE_KEY_BINDINGS_SWITCH, nargs="?", const="-", default=None,
                        metavar=_('<file where the default configuration for keystrokes will be saved>'))
-    group.add_argument(cls.EDIT_KEY_BINDINGS_SWITCH, nargs="?", const="-", default=None,
+    group2.add_argument(cls.EDIT_KEY_BINDINGS_SWITCH, nargs="?", const="-", default=None,
                        metavar=_('<file where the default configuration for keystrokes will be saved/appended>'))
-    group.add_argument('--do', metavar=_('<command to create text to be read> %s') % cls._SECURITY_WARNING)
-    group.add_argument('file', nargs='?', metavar=_('<file to be read>'))
+    group2.add_argument('--do', metavar=_('<command to create text to be read> %s') % cls._SECURITY_WARNING)
+    group2.add_argument('file', nargs='?', metavar=_('<file to be read>'))
     return parser.parse_args()
 
   @staticmethod # class CmdLineArgs
@@ -3620,11 +3623,18 @@ class CmdLineArgs:
     else:
       return SYSTEM_ENCODING
 
-  @staticmethod # class CmdLineArgs
+  @classmethod # class CmdLineArgs
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
-  def _save_default_key_bindings(args):
-    if args.scripted_mode:
-      Main.terminate(_('%s and %s cannot be set at the same time.') % (SCRIPTED_MODE_SWITCH, SAVE_KEY_BINDINGS_SWITCH))
+  def _save_default_key_bindings(cls, args):
+    if args.scripted:
+      Main.terminate(cls.WRONG_OPTION_COMBINATION_MSG %
+                     (cls.SCRIPTED_MODE_SWITCH, cls.SAVE_KEY_BINDINGS_SWITCH))
+    if args.key_bindings:
+      Main.terminate(cls.WRONG_OPTION_COMBINATION_MSG %
+                     (cls.KEY_BINDINGS_SWITCH, cls.SAVE_KEY_BINDINGS_SWITCH))
+    if args.add_key_bindings:
+      Main.terminate(cls.WRONG_OPTION_COMBINATION_MSG %
+                     (cls.ADD_KEY_BINDINGS_SWITCH, cls.SAVE_KEY_BINDINGS_SWITCH))
     output = None
     filename=args.save_default_key_bindings
     if filename == '-':
@@ -3651,14 +3661,19 @@ class CmdLineArgs:
       type_of_msg=Output.ERROR)
       Main.terminate(Main.REPORTED_ERROR_MSG % e)
 
-  @staticmethod # class CmdLineArgs
+  @classmethod # class CmdLineArgs
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
-  def _edit_key_bindings(args):
+  def _edit_key_bindings(cls, args):
 
-    if args.scripted_mode:
-      Main.terminate(_('%s and %s cannot be set at the same time.') % (SCRIPTED_MODE_SWITCH, EDIT_KEY_BINDINGS_SWITCH))
+    if args.scripted:
+      Main.terminate(cls.WRONG_OPTION_COMBINATION_MSG %
+                     (cls.SCRIPTED_MODE_SWITCH, cls.EDIT_KEY_BINDINGS_SWITCH))
     if args.key_bindings:
-      Main.terminate(_('%s and %s cannot be set at the same time.') % (KEY_BINDINGS_SWITCH, EDIT_KEY_BINDINGS_SWITCH))
+      Main.terminate(cls.WRONG_OPTION_COMBINATION_MSG %
+                     (cls.KEY_BINDINGS_SWITCH, cls.EDIT_KEY_BINDINGS_SWITCH))
+    if args.add_key_bindings:
+      Main.terminate(cls.WRONG_OPTION_COMBINATION_MSG %
+                     (cls.ADD_KEY_BINDINGS_SWITCH, cls.EDIT_KEY_BINDINGS_SWITCH))
 
     filename = args.edit_key_bindings
     do_append = False
@@ -4131,7 +4146,7 @@ class CmdLineArgs:
       RuntimeOptions.sequence_mode(args.sequence_mode)
     if args.feedback_mode is not None:
       RuntimeOptions.feedback_mode(args.feedback_mode)
-    Main.scripted_mode = args.scripted_mode
+    Main.scripted_mode = args.scripted
 
 ######################################################################################
 # PROGRAM ENTRY POINT
