@@ -159,6 +159,14 @@ class Output:
              ERROR_EXTENDED: '[!] ',
              INTERACTION: '> '}
 
+  _prompt_scripted = {NORMAL: '[Normal] ',
+             NORMAL_EXTENDED: '[NormalEx]  ',
+             INFO: '[Info] ',
+             INFO_EXTENDED: '[InfoEx] ',
+             ERROR: '[Error] ',
+             ERROR_EXTENDED: '[ErrorEx] ',
+             INTERACTION: '[Prompt] '}
+
   _first_time = True
   _counter = 0
 
@@ -197,11 +205,13 @@ class Output:
 
       what = what.strip()
 
+      prompt = cls._prompt_scripted if Main.scripted_mode else cls._prompt
+
       if type_of_msg in [cls.NORMAL_EXTENDED, cls.INFO_EXTENDED, cls.ERROR_EXTENDED]:
-        what = textwrap.indent(what, cls._prompt[type_of_msg], lambda x: True)
+        what = textwrap.indent(what, prompt[type_of_msg], lambda x: True)
         wrap = False
       elif print_prompt:
-        what = cls._prompt[type_of_msg] + what
+        what = prompt[type_of_msg] + what
       if wrap:
         width = cls.window_width(target)
         if type_of_msg== cls.NORMAL:
@@ -480,13 +490,16 @@ class Main:
   @classmethod # class Main
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def pause(cls, timeout):
-    if cls.scripted_mode or not timeout:
+    if not timeout:
       return
     with Output.get_lock():
       Output.say(_('paused: %s seconds') % timeout, type_of_msg=Output.INTERACTION)
-      ch = UserInput.getch(timeout)
-      if KeyBindings.is_bound_to_quit_command(ch):
-        Commands.process(KeyBindings.get_parsed_command(ch))
+      if cls.scripted_mode:
+        UserInput.readline() # Ending a pause interval is the GUI's responsibility
+      else:
+        ch = UserInput.getch(timeout)
+        if KeyBindings.is_bound_to_quit_command(ch):
+          Commands.process(KeyBindings.get_parsed_command(ch))
 
   _event_queue = queue.Queue()
 
@@ -1375,8 +1388,6 @@ class PlayerCommands:
   def go_line(line_number=None):
     with Output.get_lock():
       if line_number is None:
-        if Main.scripted_mode:
-          return False
         Player.stop()
         Output.say(_('Go to line:'), type_of_msg=Output.INTERACTION)
         line_number = UserInput.get_int()
@@ -1408,8 +1419,6 @@ class PlayerCommands:
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def find(cls, mode=None, cs=None, what=None):
     if not mode or not cs or not what:
-      if Main.scripted_mode:
-        return False
       Player.stop()
 
     with Output.get_lock():
@@ -2515,8 +2524,6 @@ class UserInput:
   @classmethod # class UserInput
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def get_int(cls):
-    if Main.scripted_mode:
-      return None
     with Output.get_lock():
       reply = cls.readline().strip()
       Output.separate(Output.INTERACTION)
@@ -2533,8 +2540,6 @@ class UserInput:
   @classmethod # class UserInput
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def choose_mode(cls, msg, options, current_mode_name, setter=None):
-    if Main.scripted_mode:
-      return None
     with Output.get_lock():
       Output.say(msg, type_of_msg=Output.INTERACTION)
       n = 1
@@ -2548,7 +2553,10 @@ class UserInput:
       s += _('Press 0 to cancel')
       Output.say(s, type_of_msg=Output.INTERACTION, wrap=False, print_prompt=False)
       while True:
-        c = cls.getch()
+        if Main.scripted_mode:
+          c = cls.readline().strip()
+        else:
+          c = cls.getch()
         if c.isdigit():
           if c == '0':
             Output.report_action_cancelled()
@@ -3053,8 +3061,6 @@ class RuntimeOptions:
   @classmethod # class RuntimeOptions
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def modify(cls, name, value=None):
-    if value is None and Main.scripted_mode:
-      return False
     if name not in cls._validators:
       # It will be caught by Commands.process
       raise AttributeError() # TODO agregar texto a la excepción
