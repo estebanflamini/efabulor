@@ -142,6 +142,7 @@ class Output:
   ERROR = 5
   ERROR_EXTENDED = 6
   INTERACTION = 7
+  PAUSE = 8
 
   _target = {NORMAL: sys.stdout,
              NORMAL_EXTENDED: sys.stdout,
@@ -149,7 +150,8 @@ class Output:
              INFO_EXTENDED: sys.stdout,
              ERROR: sys.stderr,
              ERROR_EXTENDED: sys.stderr,
-             INTERACTION: sys.stdout}
+             INTERACTION: sys.stdout,
+             PAUSE: sys.stdout}
 
   _prompt = {NORMAL: '',
              NORMAL_EXTENDED: '>>> ',
@@ -165,7 +167,8 @@ class Output:
              INFO_EXTENDED: '[InfoEx] ',
              ERROR: '[Error] ',
              ERROR_EXTENDED: '[ErrorEx] ',
-             INTERACTION: '[Prompt] '}
+             INTERACTION: '[Prompt] ',
+             PAUSE: '[Pause] '}
 
   _first_time = True
   _counter = 0
@@ -493,10 +496,11 @@ class Main:
     if not timeout:
       return
     with Output.get_lock():
-      Output.say(_('paused: %s seconds') % timeout, type_of_msg=Output.INTERACTION)
       if cls.scripted_mode:
+        Output.say(str(timeout), type_of_msg=Output.PAUSE)
         UserInput.readline() # Ending a pause interval is the GUI's responsibility
       else:
+        Output.say(_('paused: %s seconds') % timeout, type_of_msg=Output.INTERACTION)
         ch = UserInput.getch(timeout)
         if KeyBindings.is_bound_to_quit_command(ch):
           Commands.process(KeyBindings.get_parsed_command(ch))
