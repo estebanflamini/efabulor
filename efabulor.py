@@ -3560,9 +3560,9 @@ class CmdLineArgs:
                         type=int, choices=[0, 1], help=_('Default is 1 in Windows, 0 in Linux.'))
     group1 = parser.add_mutually_exclusive_group(required=False)
     group1.add_argument('-k', cls.KEY_BINDINGS_SWITCH, default=None,
-                        metavar=_('<configuration file for converting keystrokes to commands> %s') % cls._SECURITY_WARNING)
+                        metavar=_('<configuration file for converting keystrokes to commands>'))
     group1.add_argument(cls.ADD_KEY_BINDINGS_SWITCH, default=None,
-                        metavar=_('<additive configuration file for converting keystrokes to commands> %s') % cls._SECURITY_WARNING)
+                        metavar=_('<additive configuration file for converting keystrokes to commands>'))
     group1.add_argument(cls.SCRIPTED_MODE_SWITCH, action='store_true', default=False)
     parser.add_argument('--opt', default='',
                         metavar=_('<options that will be passed to espeak> %s') % cls._SECURITY_WARNING,
