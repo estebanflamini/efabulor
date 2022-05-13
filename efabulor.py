@@ -3533,7 +3533,7 @@ class CmdLineArgs:
                         metavar=_('<file with substitution rules>'),
                         default=[],
                         help=_('This option can appear multiple times. The files will be processed in the given order.'))
-    parser.add_argument('-r', '--raw', action='store_true', default=False,
+    parser.add_argument('-r', '--raw', '--do-not-apply-substitutions', action='store_true', default=False,
                         help=_('Apply substitutions only when asked by the user.'))
     parser.add_argument('--transformation-rules', '--transform', action='append', metavar=_('<file with transformation rules>'),
                         default=[],
