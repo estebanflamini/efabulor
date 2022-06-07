@@ -451,7 +451,7 @@ class EspeakController:
 @staticclass
 class Main:
 
-  # This class does not need a lock, because all of its methods accessing to state are called from the main thread.
+  # This class does not need a lock, because all of its methods accessing state are called from the main thread.
 
   signal.signal(signal.SIGTERM, lambda signum, frame: Main.terminate(Main.TERMINATED_BY_SIGNAL % 'SIGTERM'))
   if LINUX:
