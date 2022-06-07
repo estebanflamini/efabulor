@@ -337,7 +337,7 @@ class EspeakController:
   def options(cls, value=None):
     with cls._lock:
       if value is None:
-        return cls._o
+        return cls._options
       cls._options = value
 
   # class EspeakController
