@@ -377,10 +377,10 @@ class EspeakController:
     line = re.sub(r'^\s*-', r'\-', line) # to avoid an initial hyphen to be taken as an option
     d = ['espeak', '-s', str(self._speed)]
     if self._voice:
-      d = d + ['-v', self._voice]
+      d += ['-v', self._voice]
     if self._options:
-      d = d + self._options
-    d = d + [line]
+      d += self._options
+    d += [line]
     # In case you modify this method, be VERY careful to ensure sanitization if you were to make the call through a shell.
     return subprocess.Popen(d, text=True, stderr=subprocess.PIPE)
 
