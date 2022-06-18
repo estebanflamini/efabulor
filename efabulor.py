@@ -3488,6 +3488,7 @@ class CmdLineArgs:
     InputTextLoader.start()
 
   _SECURITY_WARNING = _('SECURITY WARNING: read the manual before using this option!')
+  _OPTIONS_WARNING = _('NOTE: read the manual and use with caution')
 
   @classmethod # class CmdLineArgs
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
@@ -3565,7 +3566,7 @@ class CmdLineArgs:
                         metavar=_('<additive configuration file for converting keystrokes to commands>'))
     group1.add_argument(cls.SCRIPTED_MODE_SWITCH, action='store_true', default=False)
     parser.add_argument('--opt', default='',
-                        metavar=_('<options that will be passed to espeak> %s') % cls._SECURITY_WARNING,
+                        metavar=_('<options that will be passed to espeak> %s') % cls._OPTIONS_WARNING,
                         help=_('This option must use the following syntax: %s') % "--opt='-opt1 -opt2 ...")
     group2 = parser.add_mutually_exclusive_group(required=True)
     group2.add_argument('-K', cls.SAVE_KEY_BINDINGS_SWITCH, nargs="?", const="-", default=None,
