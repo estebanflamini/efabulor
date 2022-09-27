@@ -3567,7 +3567,7 @@ class CmdLineArgs:
     group1.add_argument(cls.SCRIPTED_MODE_SWITCH, action='store_true', default=False)
     parser.add_argument('--opt', default='',
                         metavar=_('<options that will be passed to espeak> %s') % cls._OPTIONS_WARNING,
-                        help=_('This option must use the following syntax: %s') % "--opt='-opt1 -opt2 ...")
+                        help=_('This option must use the following syntax: %s') % "--opt='-opt1 -opt2 ...'")
     group2 = parser.add_mutually_exclusive_group(required=True)
     group2.add_argument('-K', cls.SAVE_KEY_BINDINGS_SWITCH, nargs="?", const="-", default=None,
                        metavar=_('<file where the default configuration for keystrokes will be saved>'))
