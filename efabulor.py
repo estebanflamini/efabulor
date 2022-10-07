@@ -956,7 +956,7 @@ class Commands:
       'stop-or-previous': 'stoporprevious',
       'toggle-stop-after-current-line': 'modifyopt stop-after-current-line',
       'toggle-stop-after-each-line': 'modifyopt stop-after-each-line',
-      'toggle-apply-subst': 'modifyopt apply-subst then updateplayer',
+      'toggle-apply-subst': 'modifyopt apply-subst then refreshline then updateplayer',
       'toggle-show-subst': 'modifyopt show-subst then showline',
       'log-subst': 'logsubst',
       'log-transform': 'logtransform',
@@ -1021,6 +1021,7 @@ class Commands:
     'restart'       : lambda:    PlayerCommands.restart(),
     'stop'          : lambda:    Player.stop(),
     'resetpointer'  : lambda:    Player.reset_pointer(),
+    'refreshline'   : lambda:    Player.refresh_current_line(),
     'updateplayer'  : lambda:    Player.update_player(requested_by_user=True),
     'first'         : lambda:    PlayerCommands.first(),
     'last'          : lambda:    PlayerCommands.last(),
@@ -1073,12 +1074,18 @@ class Commands:
   _separators = [CMD_SEPARATOR_LOW, CMD_SEPARATOR_HIGH, CMD_SEPARATOR_THEN, CMD_SEPARATOR_ONMOVETHEN]
   _prefixes = [CMD_PREFIX_NOECHO, CMD_PREFIX_NOINFO, CMD_PREFIX_NOUPDATEPLAYER]
 
-  _commands_with_no_args = ['toggle', 'restart', 'stop', 'resetpointer', 'updateplayer', 'first',
-                            'last', 'next', 'previous', 'stoporprevious', 'logsubst', 'logtransform',
-                            'lineno', 'showline', 'findnext', 'findprev', 'reload', 'goprevchange',
-                            'gonextchange', 'gorandom', 'checkfiles', 'openinputfile', 'opentransform',
-                            'opensubst', 'openclmonfile', 'openshell', 'showinputcmd', 'cmd',
-                            ASK_N_QUIT_CMD, QUIT_CMD,]
+  # TODO: classify commands by using an attribute in the above binding
+  # dictionaries. Then, create the following three lists by comprehension.
+
+  _commands_with_no_args = ['toggle', 'restart', 'stop', 'resetpointer',
+                            'refreshline', 'updateplayer', 'first',
+                            'last', 'next', 'previous', 'stoporprevious',
+                            'logsubst', 'logtransform', 'lineno', 'showline',
+                            'findnext', 'findprev', 'reload', 'goprevchange',
+                            'gonextchange', 'gorandom', 'checkfiles',
+                            'openinputfile', 'opentransform', 'opensubst',
+                            'openclmonfile', 'openshell', 'showinputcmd',
+                            'cmd', ASK_N_QUIT_CMD, QUIT_CMD,]
 
   _commands_with_or_without_args = ['find', 'goline', 'pause', 'sh']
   _commands_which_accept_an_int = ['goline', 'pause', 'changespeed']
@@ -3062,6 +3069,15 @@ class RuntimeOptions:
   def valid_option(cls, name, value):
     return cls._validators[name](value)
 
+  # Boolean options currently being managed at the class level, i.e., not by
+  # an instance of an option class.
+
+  _internal_setter_getters = {
+    'apply-subst': lambda *x, **y: RuntimeOptions.apply_subst(*x, **y),
+    'show-subst': lambda *x, **y: RuntimeOptions.show_subst(*x, **y),
+    'no-info': lambda *x, **y: RuntimeOptions.no_info(*x, **y)
+    }
+
   @classmethod # class RuntimeOptions
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def modify(cls, name, value=None):
@@ -3074,19 +3090,13 @@ class RuntimeOptions:
 
     if name in cls._scripting_setters:
       cls._scripting_setters[name](value, say_it=True)
-    elif name in ['apply-subst', 'show-subst', 'no-info']:
-      # Boolean options currently being managed at the class level, i.e., not by an instance of an option class.
-      # Note that 'no_info' is a special case in which there is no class attribute holding the value (see below).
-      old_value = cls._apply_subst if name == 'apply-subst' else cls._show_subst if name == 'show-subst' else cls.no_info()
-      value = (not old_value) if value is None else (value in cls._BooleanOption._true_values)
-      if name == 'apply-subst':
-        cls.apply_subst(value, say_it=True)
-        return Player.refresh_current_line()
-      elif name == 'show-subst':
-        cls.show_subst(value, say_it=True)
-      else:
-        cls.no_info(value, say_it=True)
-      return old_value != value
+    elif name in cls._internal_setter_getters:
+      setter_getter = cls._internal_setter_getters[name]
+      old_value = setter_getter()
+      value = (not old_value) if value is None \
+        else (value in cls._BooleanOption._true_values)
+      setter_getter(value, say_it=True)
+      return old_value != setter_getter()
     elif name == 'monitoring-interval':
       if value is None:
         value = cls._IntervalOption._get_pause_value()
@@ -3227,11 +3237,11 @@ class RuntimeOptions:
   def apply_subst(cls, value=None, say_it=False):
     if value is None:
       return cls._apply_subst
-    cls._apply_subst = value
     if not Substitutions.rule_files():
       if say_it:
         Output.say(cls.NO_SUBST, type_of_msg=Output.INFO)
       return
+    cls._apply_subst = value
     if value:
       Substitutions.load()
     if say_it:
