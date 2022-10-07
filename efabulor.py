@@ -682,7 +682,7 @@ class Player:
       RuntimeOptions.stop_after_current_line(False, say_it=True)
     cls._line_number = value
     cls._at_eol = False
-    cls.line_to_be_read_changed()
+    cls.refresh_current_line()
     cls.update_player()
     if showline:
       cls.showline()
@@ -694,7 +694,7 @@ class Player:
 
   @classmethod # class Player
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
-  def line_to_be_read_changed(cls):
+  def refresh_current_line(cls):
     if not cls._lines:
       return False
     old_line_to_be_read = cls._line_to_be_read
@@ -707,7 +707,7 @@ class Player:
   def substitution_rules_changed(cls):
     if not cls._lines:
       return
-    if cls.line_to_be_read_changed():
+    if cls.refresh_current_line():
       a = cls._text_player.running_and_not_paused()
       b = RuntimeOptions.restart_after_substitution_change()
       Player.stop()
@@ -3081,7 +3081,7 @@ class RuntimeOptions:
       value = (not old_value) if value is None else (value in cls._BooleanOption._true_values)
       if name == 'apply-subst':
         cls.apply_subst(value, say_it=True)
-        return Player.line_to_be_read_changed()
+        return Player.refresh_current_line()
       elif name == 'show-subst':
         cls.show_subst(value, say_it=True)
       else:
