@@ -2440,6 +2440,8 @@ class TextVersions:
     if n is not None:
       Player.stop()
       Player.line_number(n)
+    else:
+      Player.refresh_current_line()
     a = cls._restart_player_after_playing_feedback and not Player.running()
     b = n is not None and RuntimeOptions.restart_after_change()
     c = RuntimeOptions.restart_on_touch() and not Player.running()
