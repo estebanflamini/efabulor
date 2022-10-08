@@ -1130,7 +1130,9 @@ class Commands:
   @classmethod # class Commands
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def _parse(cls, cmd):
-    if cls.CMD_SEPARATOR_LOW in cmd:
+    if not cmd:
+      return None
+    elif cls.CMD_SEPARATOR_LOW in cmd:
       return cls._parse_with_separator(cls.CMD_SEPARATOR_LOW, cmd)
     elif cls.CMD_SEPARATOR_THEN in cmd:
       return cls._parse_with_separator(cls.CMD_SEPARATOR_THEN, cmd)
