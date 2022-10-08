@@ -1072,6 +1072,7 @@ class Commands:
   UNSUCCESFUL_COMMAND = _('The following command failed: %s. Reported error is: %s.')
 
   _separators = [CMD_SEPARATOR_LOW, CMD_SEPARATOR_HIGH, CMD_SEPARATOR_THEN, CMD_SEPARATOR_ONMOVETHEN]
+  _non_conditional_separators = [CMD_SEPARATOR_LOW, CMD_SEPARATOR_HIGH]
   _prefixes = [CMD_PREFIX_NOECHO, CMD_PREFIX_NOINFO, CMD_PREFIX_NOUPDATEPLAYER]
 
   # TODO: classify commands by using an attribute in the above binding
@@ -1310,7 +1311,18 @@ class Commands:
   def contains_quit(cls, what):
     if isinstance(what, str):
       return what in [cls.QUIT_CMD, cls.ASK_N_QUIT_CMD]
-    return any(cls.contains_quit(x) for x in what)
+    elif what[0] in cls._non_conditional_separators:
+      # Both the antecedent and the consequent get executed.
+      return cls.contains_quit(what[1]) or cls.contains_quit(what[2])
+    elif what[0] in cls._separators:
+      # We cannot be sure the consequent will be executed,
+      # so only check the antededent
+      return cls.contains_quit(what[1])
+    elif what[0] in cls._prefixes:
+      return cls.contains_quit(what[1:])
+    else:
+      # Just check the verb of the command.
+      return cls.contains_quit(what[0])
 
 @staticclass
 class PlayerCommands:
