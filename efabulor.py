@@ -2373,58 +2373,92 @@ class TrackingController:
   def _compose_spoken_feedback(cls):
     cls._spoken_feedback = []
     if cls._changed_again:
-      SpokenFeedback.append_message(cls._spoken_feedback, 'file-changed-again')
+      SpokenFeedback.append_message(cls._spoken_feedback,
+                                    'file-changed-again')
     if cls._newlen == 0:
-      SpokenFeedback.append_message(cls._spoken_feedback, 'file-is-empty')
-      return cls._spoken_feedback
+      SpokenFeedback.append_message(cls._spoken_feedback,
+                                    'file-is-empty')
+      return
     if cls._blank_areas_changed:
-      SpokenFeedback.append_message(cls._spoken_feedback, 'blank-areas-changed')
+      SpokenFeedback.append_message(cls._spoken_feedback,
+                                    'blank-areas-changed')
+    cls._feedback_for_length_change()
+    if not cls._modified_lines:
+      cls._feedback_when_no_modified_lines()
+    else:
+      cls._feedback_when_modified_lines()
+    cls._feedback_for_action_taken()
+
+  @classmethod # class TrackingController
+  #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
+  def _feedback_for_length_change(cls):
     if cls._newlen < cls._registered_len:
       SpokenFeedback.append_message(cls._spoken_feedback, 'file-decreased')
       if cls._newlen <= cls._player_was_at_line:
         SpokenFeedback.append_message(cls._spoken_feedback, 'file-too-short')
     elif cls._newlen > cls._registered_len:
       SpokenFeedback.append_message(cls._spoken_feedback, 'file-increased')
-    if not cls._modified_lines:
-      if cls._newlen == cls._registered_len:
-        if not cls._changed_again:
-          SpokenFeedback.append_message(cls._spoken_feedback, 'no-changes')
-        else:
-          SpokenFeedback.append_message(cls._spoken_feedback, 'changes-reverted')
-    else:
-      if cls._modified_lines[0] < cls._player_was_at_line:
-        SpokenFeedback.append_message(cls._spoken_feedback, 'changes-before')
-      elif cls._modified_lines[0] == cls._player_was_at_line:
-        SpokenFeedback.append_message(cls._spoken_feedback, 'changes-here')
-      elif cls._player_was_at_eol and cls._modified_lines[0] == cls._player_was_at_line + 1:
-        SpokenFeedback.append_message(cls._spoken_feedback, 'changes-next')
-      else:
-        SpokenFeedback.append_message(cls._spoken_feedback, 'changes-after')
-      if len(cls._modified_lines) > 1:
-        SpokenFeedback.append_message(cls._spoken_feedback, 'many-changes')
 
+  @classmethod # class TrackingController
+  #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
+  def _feedback_when_no_modified_lines(cls):
+    if cls._newlen == cls._registered_len:
+      if not cls._changed_again:
+        SpokenFeedback.append_message(cls._spoken_feedback, 'no-changes')
+      else:
+        SpokenFeedback.append_message(cls._spoken_feedback, 'changes-reverted')
+
+  @classmethod # class TrackingController
+  #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
+  def _feedback_when_modified_lines(cls):
+    if cls._modified_lines[0] < cls._player_was_at_line:
+      SpokenFeedback.append_message(cls._spoken_feedback, 'changes-before')
+    elif cls._modified_lines[0] == cls._player_was_at_line:
+      SpokenFeedback.append_message(cls._spoken_feedback, 'changes-here')
+    elif cls._player_was_at_eol \
+         and cls._modified_lines[0] == cls._player_was_at_line + 1:
+      SpokenFeedback.append_message(cls._spoken_feedback, 'changes-next')
+    else:
+      SpokenFeedback.append_message(cls._spoken_feedback, 'changes-after')
+    if len(cls._modified_lines) > 1:
+      SpokenFeedback.append_message(cls._spoken_feedback, 'many-changes')
+
+  @classmethod # class TrackingController
+  #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
+  def _feedback_for_action_taken(cls):
     new_line_number = cls._new_line_number()
-    if RuntimeOptions.tracking_mode() == cls.RESTART_FROM_BEGINNING and new_line_number is not None:
+    if RuntimeOptions.tracking_mode() == cls.RESTART_FROM_BEGINNING \
+         and new_line_number is not None:
       SpokenFeedback.append_message(cls._spoken_feedback, 'starting-again')
-    elif RuntimeOptions.sequence_mode() is SEQUENCE_MODIFIED and Player.never_said_anything():
+    elif RuntimeOptions.sequence_mode() is SEQUENCE_MODIFIED \
+         and Player.never_said_anything():
       pass
     elif new_line_number is None:
       if cls._spoken_feedback and cls._restart_player_after_playing_feedback:
         SpokenFeedback.append_message(cls._spoken_feedback, 'restarting')
-    elif Player.running_and_not_paused() or cls._changed_again or RuntimeOptions.restarting_message_when_not_playing():
-      if new_line_number < cls._player_was_at_line:
-        SpokenFeedback.append_message(cls._spoken_feedback, 'jumping-back')
-      elif new_line_number == cls._player_was_at_line:
-        SpokenFeedback.append_message(cls._spoken_feedback, 'restarting')
-      elif new_line_number == cls._player_was_at_line + 1 and cls._player_was_at_eol:
-        SpokenFeedback.append_message(cls._spoken_feedback, 'continuing')
-      elif RuntimeOptions.sequence_mode() is SEQUENCE_MODIFIED and new_line_number == cls._player_was_at_line + 1 and \
-          new_line_number == cls._modified_lines[0]:
-        SpokenFeedback.append_message(cls._spoken_feedback, 'continuing')
-      elif RuntimeOptions.tracking_mode() == cls.FORWARD_TRACKING:
-        SpokenFeedback.append_message(cls._spoken_feedback, 'jumping-forward')
-      else:
-        SpokenFeedback.append_message(cls._spoken_feedback, 'restarting')
+    elif Player.running_and_not_paused() \
+        or cls._changed_again \
+        or RuntimeOptions.restarting_message_when_not_playing():
+      cls._feedback_when_player_will_restart(new_line_number)
+
+  @classmethod # class TrackingController
+  #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
+  def _feedback_when_player_will_restart(cls, new_line_number):
+    if new_line_number < cls._player_was_at_line:
+      SpokenFeedback.append_message(cls._spoken_feedback, 'jumping-back')
+    elif new_line_number == cls._player_was_at_line:
+      SpokenFeedback.append_message(cls._spoken_feedback, 'restarting')
+    elif new_line_number == cls._player_was_at_line + 1 \
+        and cls._player_was_at_eol:
+      SpokenFeedback.append_message(cls._spoken_feedback, 'continuing')
+    elif RuntimeOptions.sequence_mode() is SEQUENCE_MODIFIED \
+        and new_line_number == cls._player_was_at_line + 1 \
+        and new_line_number == cls._modified_lines[0]:
+      SpokenFeedback.append_message(cls._spoken_feedback, 'continuing')
+    elif RuntimeOptions.tracking_mode() == cls.FORWARD_TRACKING:
+      SpokenFeedback.append_message(cls._spoken_feedback, 'jumping-forward')
+    else:
+      SpokenFeedback.append_message(cls._spoken_feedback, 'restarting')
 
   @classmethod # class TrackingController
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
