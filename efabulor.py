@@ -2194,7 +2194,8 @@ class TrackingController:
     cls._player_was_at_eol = Player.at_eol()
     cls._changed_again = cls.spoken_feedback_running()
     cls._compute_changes(text, lines)
-    cls._restart_player_after_playing_feedback |= Player.running()
+    if Player.running_and_not_paused():
+      cls._restart_player_after_playing_feedback = True
     cls._compose_spoken_feedback()
     cls._show_changes()
     if cls._spoken_feedback:
@@ -2208,9 +2209,11 @@ class TrackingController:
   @classmethod # class TrackingController
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def _compute_changes(cls, text, lines):
-    cls._blank_areas_changed = cls._compare_blank_areas(text, cls._registered_text)
+    cls._blank_areas_changed = cls._compare_blank_areas(
+      text, cls._registered_text)
     cls._newlen = len(lines)
-    cls._modified_lines = cls._compare_lines(lines, cls._registered_lines)
+    cls._modified_lines = cls._compare_lines(
+      lines, cls._registered_lines)
 
   @classmethod # class TrackingController
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
@@ -2236,8 +2239,11 @@ class TrackingController:
     if cls._newlen < cls._registered_len:
       modified_lines = [n for n in modified_lines if n < cls._newlen]
     if RuntimeOptions.sequence_mode() is SEQUENCE_MODIFIED:
-      # cls._modified_lines still contains the list of modified lines from the previous text's version.
-      tmp_modified_lines = [x for x in cls._modified_lines if x > cls._player_was_at_line and x < cls._newlen]
+      # cls._modified_lines still contains the list of modified
+      # lines from the previous text's version.
+      tmp_modified_lines = [
+        x for x in cls._modified_lines
+        if x > cls._player_was_at_line and x < cls._newlen]
       if tmp_modified_lines:
         modified_lines = sorted(list(set(modified_lines + tmp_modified_lines)))
     return modified_lines
@@ -2246,61 +2252,121 @@ class TrackingController:
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def _show_changes(cls):
     with Output.get_lock():
-      if cls._changed_again:
-        Output.say(_('The input file changed again on disk.'), type_of_msg=Output.INFO)
-        Output.say(_('Reporting changes again (may include previously reported changes).'), type_of_msg=Output.INFO)
+      cls._report_changed_again()
       if cls._newlen == 0:
         Output.say(_('The input file is empty.'), type_of_msg=Output.INFO)
         return
-      if cls._blank_areas_changed:
-        Output.say(_('Blank areas of the input file have changed.'), type_of_msg=Output.INFO)
-      if cls._newlen < cls._registered_len:
-        Output.say(_('The text was shortened from %s to %s line(s).') % (cls._registered_len, cls._newlen),
-                   type_of_msg=Output.INFO)
-        if cls._newlen <= cls._player_was_at_line:
-          Output.say(_('The text was shortened before the line where the player was positioned.'), type_of_msg=Output.INFO)
-      elif cls._newlen > cls._registered_len:
-        Output.say(_('The text was extended from %s to %s lines.') % (cls._registered_len, cls._newlen), type_of_msg=Output.INFO)
+      cls._report_blank_areas_changed()
+      cls._report_length_change()
       if not cls._modified_lines:
         if cls._newlen == cls._registered_len:
-          if not cls._changed_again:
-            Output.say(_('No changes to the text were detected.'), type_of_msg=Output.INFO)
-          else:
-            Output.say(_('The text was reverted to the state it had before the previous changes.'), type_of_msg=Output.INFO)
+          cls._report_no_modified_lines()
           return
       else:
-        # Reduce contiguous ranges and convert line numbers to one-based for the screen
-        first = cls._modified_lines[0]
-        tmp = [(first, first)]
-        last = first
-        for line in cls._modified_lines[1:]:
-          if line == last + 1:
-            tmp[-1] = (first, line)
-          else:
-            first = line
-            tmp.append((first, first))
-          last = line
-        tmp = map(lambda x: str(x[0] + 1) if x[0] == x[1] else str(x[0] + 1) + '-' + str(x[1] + 1), tmp)
-        list_of_lines = ', '.join(tmp)
-
-        delta = 1
-        msg = _('Changes were detected at lines: %s (current line is: %s).')
-        if cls._new_line_number() is not None:
-          if RuntimeOptions.tracking_mode() == cls.RESTART_FROM_BEGINNING:
-            pass
-          elif cls._modified_lines[0] < cls._player_was_at_line:
-            msg = _('Changes were detected at lines: %s; jumping back from line %s.')
-          elif cls._modified_lines[0] == cls._player_was_at_line:
-            msg = _('Changes were detected at lines: %s; restarting at line %s.')
-          elif cls._player_was_at_eol and cls._modified_lines[0] == cls._player_was_at_line + 1:
-            msg = _('Changes were detected at lines: %s; continuing at line %s.')
-            delta = 2
-          elif RuntimeOptions.tracking_mode() == cls.FORWARD_TRACKING:
-            msg = _('Changes were detected at lines: %s; jumping forward from line %s.')
-        Output.say(msg % (list_of_lines, cls._player_was_at_line + delta), type_of_msg=Output.INFO)
+        cls._show_modified_lines_and_action()
 
       if RuntimeOptions.tracking_mode() == cls.RESTART_FROM_BEGINNING:
         Output.say(_('Restarting from the beginning.'), type_of_msg=Output.INFO)
+
+  @classmethod # class TrackingController
+  #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
+  def _report_changed_again(cls):
+    if cls._changed_again:
+      Output.say(
+        _('The input file changed again on disk.'),
+        type_of_msg=Output.INFO)
+      Output.say(_(
+        'Reporting changes again (may include previously reported changes).'),
+        type_of_msg=Output.INFO)
+
+  @classmethod # class TrackingController
+  #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
+  def _report_blank_areas_changed(cls):
+    if cls._blank_areas_changed:
+      Output.say(
+        _('Blank areas of the input file have changed.'),
+        type_of_msg=Output.INFO)
+
+  @classmethod # class TrackingController
+  #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
+  def _report_length_change(cls):
+    if cls._newlen < cls._registered_len:
+      Output.say(
+        _('The text was shortened from %s to %s line(s).')
+        % (cls._registered_len, cls._newlen),
+        type_of_msg=Output.INFO)
+      if cls._newlen <= cls._player_was_at_line:
+        Output.say(
+          _('The text was shortened before the current line. Repositioning.'),
+          type_of_msg=Output.INFO)
+    elif cls._newlen > cls._registered_len:
+      Output.say(_('The text was extended from %s to %s lines.')
+                 % (cls._registered_len, cls._newlen),
+                 type_of_msg=Output.INFO)
+
+  @classmethod # class TrackingController
+  #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
+  def _report_no_modified_lines(cls):
+    if not cls._changed_again:
+      Output.say(_('No changes to the text were detected.'),
+                 type_of_msg=Output.INFO)
+    else:
+      Output.say(_('The latest changes have been reverted.'),
+                 type_of_msg=Output.INFO)
+
+  _ACTION_MSG_1 = \
+    _('Changes were detected at lines: %s (current line is: %s).')
+  _ACTION_MSG_2 = \
+    _('Changes were detected at lines: %s; jumping back from line %s.')
+  _ACTION_MSG_3 = \
+    _('Changes were detected at lines: %s; restarting at line %s.')
+  _ACTION_MSG_4 = \
+    _('Changes were detected at lines: %s; continuing at line %s.')
+  _ACTION_MSG_5 = \
+    _('Changes were detected at lines: %s; jumping forward from line %s.')
+
+  @classmethod # class TrackingController
+  #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
+  def _show_modified_lines_and_action(cls):
+    changes = cls._get_modified_lines_representation()
+    delta = 1
+    msg = cls._ACTION_MSG_1
+    if cls._new_line_number() is not None:
+      if RuntimeOptions.tracking_mode() == cls.RESTART_FROM_BEGINNING:
+        pass
+      elif cls._modified_lines[0] < cls._player_was_at_line:
+        msg = cls._ACTION_MSG_2
+      elif cls._modified_lines[0] == cls._player_was_at_line:
+        msg = cls._ACTION_MSG_3
+      elif cls._player_was_at_eol \
+           and cls._modified_lines[0] == cls._player_was_at_line + 1:
+        msg = cls._ACTION_MSG_4
+        delta = 2
+      elif RuntimeOptions.tracking_mode() == cls.FORWARD_TRACKING:
+        msg = cls._ACTION_MSG_5
+    Output.say(
+      msg % (changes, cls._player_was_at_line + delta),
+      type_of_msg=Output.INFO)
+
+  @classmethod # class TrackingController
+  #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
+  def _get_modified_lines_representation(cls):
+    # Create a list of contiguous ranges: [(start1, end1), (start2, end2), ...]
+    first = cls._modified_lines[0]
+    tmp = [(first, first)]
+    last = first
+    for line in cls._modified_lines[1:]:
+      if line == last + 1:
+        tmp[-1] = (first, line)
+      else:
+        first = line
+        tmp.append((first, first))
+      last = line
+    # Add 1 to line numbers for printing:
+    tmp = [(x[0]+1, x[1]+1) for x in tmp]
+    # Stringify ranges:
+    tmp = [str(x[0]) if x[0] == x[1] else '%s-%s' % x for x in tmp]
+    return ', '.join(tmp)
 
   @classmethod # class TrackingController
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
