@@ -2467,23 +2467,39 @@ class TrackingController:
     if RuntimeOptions.tracking_mode() == cls.NO_TRACKING:
       return None
     elif RuntimeOptions.tracking_mode() == cls.RESTART_FROM_BEGINNING:
-      return 0 if modified_lines or RuntimeOptions.restart_on_touch() else None
+      return 0 if modified_lines or RuntimeOptions.restart_on_touch() \
+             else None
     elif not modified_lines:
-      if cls._changed_again and cls._newlen == cls._registered_len:
-        return Player.line_number()
-      elif RuntimeOptions.tracking_mode() == cls.FORWARD_TRACKING:
-        return None if cls._newlen <= cls._registered_len else cls._registered_len
-      return None
+      return cls._new_line_number_when_no_modified_lines()
     elif RuntimeOptions.tracking_mode() == cls.FORWARD_TRACKING:
-      if RuntimeOptions.sequence_mode() is SEQUENCE_MODIFIED and modified_lines[0] > cls._player_was_at_line \
-          and Player.running_and_not_paused():
-        return None
-      return modified_lines[0]
+      return cls._new_line_number_for_forward_tracking()
     else:
-      line_number = cls._player_was_at_line + (1 if cls._player_was_at_eol else 0)
+      line_number = cls._player_was_at_line \
+        + (1 if cls._player_was_at_eol else 0)
       if modified_lines[0] <= line_number:
         return modified_lines[0]
     return None
+
+  @classmethod # class TrackingController
+  #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
+  def _new_line_number_when_no_modified_lines(cls):
+    if cls._changed_again and cls._newlen == cls._registered_len:
+      return Player.line_number()
+    elif RuntimeOptions.tracking_mode() == cls.FORWARD_TRACKING:
+      return None if cls._newlen <= cls._registered_len \
+             else cls._registered_len
+    else:
+      return None
+
+  @classmethod # class TrackingController
+  #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
+  def _new_line_number_for_forward_tracking(cls):
+    if RuntimeOptions.sequence_mode() is SEQUENCE_MODIFIED \
+        and modified_lines[0] > cls._player_was_at_line \
+        and Player.running_and_not_paused():
+      return None
+    else:
+      return modified_lines[0]
 
   _lock = threading.RLock()
 
