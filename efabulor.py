@@ -542,8 +542,8 @@ class Main:
       else:
         ch = UserInput.getch(0.1)
         parsed_command = KeyBindings.get_parsed_command(ch)
-        if ch is not None and TextVersions.spoken_feedback_running():
-          TextVersions.stop_playing_feedback()
+        if ch is not None and TrackingController.spoken_feedback_running():
+          TrackingController.stop_playing_feedback()
           if not KeyBindings.is_bound_to_quit_command(ch):
             parsed_command = None
             Output.say(_('Feedback playing was stopped. Press the same key again if you intended to run the command instead.'),
@@ -569,7 +569,7 @@ class Main:
             cls.event(cls.TEXT_LOADING_ERROR)
             continue
           Player.lines(lines)
-          TextVersions.register(text, lines)
+          TrackingController.register(text, lines)
           if text_is_not_loaded_yet:
             text_is_not_loaded_yet = False
             Player.line_number(RuntimeOptions.sequence_mode().first(), showline=False)
@@ -716,7 +716,7 @@ class Player:
         Output.say(_('New substitution rules apply to this line. Restarting.'), type_of_msg=Output.INFO)
         msg = SpokenFeedback.get_message('subst-changed')
         if msg:
-          while TextVersions.spoken_feedback_running(): # It should be always False, but just in case
+          while TrackingController.spoken_feedback_running(): # It should be always False, but just in case
             time.sleep(0.1)
           EspeakController().say(msg)
         Player.start()
@@ -1533,7 +1533,7 @@ class PlayerCommands:
   @classmethod # class PlayerCommands
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def go_modified(cls, forward=True):
-    modified_lines = TextVersions.modified_lines()
+    modified_lines = TrackingController.modified_lines()
     if not modified_lines:
       Output.say(SEQUENCE_MODIFIED.msg_empty, type_of_msg=Output.INFO)
       return False
@@ -2144,13 +2144,13 @@ class FileMonitor:
         no_changes_msg_already_printed = True
 
 @staticclass
-class TextVersions:
+class TrackingController:
 
   # Most of the state-accessing code of this class is called only from the main thread.
   # A lock is provided below for some critical sections of multithreaded code.
 
   _feedback_player = EspeakController()
-  Main.register_termination_hook(lambda: TextVersions.stop())
+  Main.register_termination_hook(lambda: TrackingController.stop())
 
   NO_TRACKING = 0
   BACKWARD_TRACKING = 1
@@ -2161,7 +2161,7 @@ class TextVersions:
   _registered_lines = None
   _registered_len = None
 
-  @classmethod # class TextVersions
+  @classmethod # class TrackingController
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def register(cls, text, lines):
     if cls._registered_text is None:
@@ -2177,7 +2177,7 @@ class TextVersions:
   _modified_lines = []
   _spoken_feedback = []
 
-  @classmethod # class TextVersions
+  @classmethod # class TrackingController
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def modified_lines(cls):
     return cls._modified_lines
@@ -2187,7 +2187,7 @@ class TextVersions:
   _restart_player_after_playing_feedback = False
   _changed_again = False
 
-  @classmethod # class TextVersions
+  @classmethod # class TrackingController
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def _report_changes_and_register(cls, text, lines):
     cls._player_was_at_line = Player.line_number()
@@ -2205,21 +2205,21 @@ class TextVersions:
         time.sleep(0.1)
       cls._update_player_and_register(text, lines)
       
-  @classmethod # class TextVersions
+  @classmethod # class TrackingController
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def _compute_changes(cls, text, lines):
     cls._blank_areas_changed = cls._compare_blank_areas(text, cls._registered_text)
     cls._newlen = len(lines)
     cls._modified_lines = cls._compare_lines(lines, cls._registered_lines)
 
-  @classmethod # class TextVersions
+  @classmethod # class TrackingController
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def _compare_blank_areas(cls, text, old_text):
     old_blank_areas = re.findall(r'(\s+?)\n+', old_text)
     blank_areas = re.findall(r'(\s+?)\n+', text)
     return old_blank_areas != blank_areas
 
-  @classmethod # class TextVersions
+  @classmethod # class TrackingController
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def _compare_lines(cls, lines, old_lines):
     if not lines:
@@ -2242,7 +2242,7 @@ class TextVersions:
         modified_lines = sorted(list(set(modified_lines + tmp_modified_lines)))
     return modified_lines
 
-  @classmethod # class TextVersions
+  @classmethod # class TrackingController
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def _show_changes(cls):
     with Output.get_lock():
@@ -2302,7 +2302,7 @@ class TextVersions:
       if RuntimeOptions.tracking_mode() == cls.RESTART_FROM_BEGINNING:
         Output.say(_('Restarting from the beginning.'), type_of_msg=Output.INFO)
 
-  @classmethod # class TextVersions
+  @classmethod # class TrackingController
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def _compose_spoken_feedback(cls):
     cls._spoken_feedback = []
@@ -2360,7 +2360,7 @@ class TextVersions:
       else:
         SpokenFeedback.append_message(cls._spoken_feedback, 'restarting')
 
-  @classmethod # class TextVersions
+  @classmethod # class TrackingController
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def _new_line_number(cls):
     modified_lines = cls._modified_lines
@@ -2391,7 +2391,7 @@ class TextVersions:
   _stopped = threading.Condition(_lock)
   _stopped_from_inside = False
 
-  @classmethod # class TextVersions
+  @classmethod # class TrackingController
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def _play_feedback_and_register(cls, text, lines):
     with cls._lock:
@@ -2402,18 +2402,18 @@ class TextVersions:
       cls._running = True
     Main.start_daemon(lambda: cls._run(text, lines))
 
-  @classmethod # class TextVersions
+  @classmethod # class TrackingController
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def spoken_feedback_running(cls):
     with cls._lock:
       return cls._running
 
-  @classmethod # class TextVersions
+  @classmethod # class TrackingController
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def stop_playing_feedback(cls): # Provided just as a convenience.
     cls.stop()
 
-  @classmethod # class TextVersions
+  @classmethod # class TrackingController
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def stop(cls):
     with cls._lock:
@@ -2424,7 +2424,7 @@ class TextVersions:
         cls._feedback_player.stop()
       cls._stopped.wait()
 
-  @classmethod # class TextVersions
+  @classmethod # class TrackingController
   def _run(cls, text, lines):
     with cls._lock:
       for line in cls._spoken_feedback:
@@ -2447,7 +2447,7 @@ class TextVersions:
         return
       Main.event(Main.SPOKEN_FEEDBACK_ENDED, lambda: cls._update_player_and_register(text, lines))
 
-  @classmethod # class TextVersions
+  @classmethod # class TrackingController
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def _update_player_and_register(cls, text, lines):
     n = cls._new_line_number()
@@ -2672,44 +2672,44 @@ class SEQUENCE_MODIFIED:
   @staticmethod # class SEQUENCE_MODIFIED
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def empty():
-    return len(TextVersions.modified_lines()) == 0
+    return len(TrackingController.modified_lines()) == 0
 
   @staticmethod # class SEQUENCE_MODIFIED
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def first():
-    m = TextVersions.modified_lines()
+    m = TrackingController.modified_lines()
     return m[0] if m else SEQUENCE_NORMAL.first()
 
   @staticmethod # class SEQUENCE_MODIFIED
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def last():
-    m = TextVersions.modified_lines()
+    m = TrackingController.modified_lines()
     return m[-1] if m else SEQUENCE_NORMAL.last()
 
   @staticmethod # class SEQUENCE_MODIFIED
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def bof():
-    m = TextVersions.modified_lines()
+    m = TrackingController.modified_lines()
     return not m or Player.line_number() <= m[0]
 
   @staticmethod # class SEQUENCE_MODIFIED
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def eof():
-    m = TextVersions.modified_lines()
+    m = TrackingController.modified_lines()
     return not m or Player.line_number() >= m[-1]
 
   @staticmethod # class SEQUENCE_MODIFIED
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def next():
     n = Player.line_number()
-    tmp = [x for x in TextVersions.modified_lines() if x > n] + [n]
+    tmp = [x for x in TrackingController.modified_lines() if x > n] + [n]
     return tmp[0]
 
   @staticmethod # class SEQUENCE_MODIFIED
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def previous():
     n = Player.line_number()
-    tmp = [n] + [x for x in TextVersions.modified_lines() if x < n]
+    tmp = [n] + [x for x in TrackingController.modified_lines() if x < n]
     return tmp[-1]
 
 class SEQUENCE_RANDOM:
@@ -3309,13 +3309,13 @@ class RuntimeOptions:
 
   _feedback_mode = SpokenFeedback.MINIMUM_FEEDBACK
 
-  TRACKING_OPTIONS = {'none': TextVersions.NO_TRACKING,
-                      'backward': TextVersions.BACKWARD_TRACKING,
-                      'forward': TextVersions.FORWARD_TRACKING,
-                      'restart': TextVersions.RESTART_FROM_BEGINNING}
+  TRACKING_OPTIONS = {'none': TrackingController.NO_TRACKING,
+                      'backward': TrackingController.BACKWARD_TRACKING,
+                      'forward': TrackingController.FORWARD_TRACKING,
+                      'restart': TrackingController.RESTART_FROM_BEGINNING}
   TRACKING_OPTIONS_REV = {v: k for k, v in TRACKING_OPTIONS.items()}
 
-  _tracking_mode = TextVersions.BACKWARD_TRACKING
+  _tracking_mode = TrackingController.BACKWARD_TRACKING
 
   SEQUENCE_OPTIONS = {'normal': SEQUENCE_NORMAL,
                       'modified': SEQUENCE_MODIFIED,
@@ -3386,8 +3386,8 @@ class RuntimeOptions:
         Output.say(_('Sequence mode set to: %s.') % name, type_of_msg=Output.INFO)
       if adjust_tracking_mode and \
            mode in [SEQUENCE_MODIFIED, SEQUENCE_RANDOM] and \
-           cls._tracking_mode != TextVersions.FORWARD_TRACKING:
-        cls._set_tracking_mode(TextVersions.FORWARD_TRACKING, say_it, adjust_sequence_mode=False)
+           cls._tracking_mode != TrackingController.FORWARD_TRACKING:
+        cls._set_tracking_mode(TrackingController.FORWARD_TRACKING, say_it, adjust_sequence_mode=False)
     else:
       # It will be caught by process_command
       raise AttributeError()
