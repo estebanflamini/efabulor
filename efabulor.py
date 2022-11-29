@@ -2573,7 +2573,7 @@ class TrackingController:
       Player.line_number(n)
     else:
       Player.refresh_current_line()
-    a = cls._restart_player_after_feedback and not Player.running()
+    a = cls._restart_player_after_feedback and cls._spoken_feedback
     b = n is not None and RuntimeOptions.restart_after_change()
     c = RuntimeOptions.restart_on_touch() and not Player.running()
     if a or b or c:
