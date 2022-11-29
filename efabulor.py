@@ -2184,7 +2184,7 @@ class TrackingController:
 
   _player_was_at_line = None
   _player_was_at_eol = False
-  _restart_player_after_playing_feedback = False
+  _restart_player_after_feedback = False
   _changed_again = False
 
   @classmethod # class TrackingController
@@ -2192,12 +2192,13 @@ class TrackingController:
   def _report_changes_and_register(cls, text, lines):
     cls._player_was_at_line = Player.line_number()
     cls._player_was_at_eol = Player.at_eol()
+    cls._restart_player_after_feedback |= Player.running_and_not_paused()
+
     cls._changed_again = cls.spoken_feedback_running()
     cls._compute_changes(text, lines)
-    if Player.running_and_not_paused():
-      cls._restart_player_after_playing_feedback = True
     cls._compose_spoken_feedback()
     cls._show_changes()
+
     if cls._spoken_feedback:
       Player.stop()
       cls._play_feedback_and_register(text, lines)
@@ -2434,7 +2435,7 @@ class TrackingController:
          and Player.never_said_anything():
       pass
     elif new_line_number is None:
-      if cls._spoken_feedback and cls._restart_player_after_playing_feedback:
+      if cls._spoken_feedback and cls._restart_player_after_feedback:
         SpokenFeedback.append_message(cls._spoken_feedback, 'restarting')
     elif Player.running_and_not_paused() \
         or cls._changed_again \
@@ -2572,12 +2573,12 @@ class TrackingController:
       Player.line_number(n)
     else:
       Player.refresh_current_line()
-    a = cls._restart_player_after_playing_feedback and not Player.running()
+    a = cls._restart_player_after_feedback and not Player.running()
     b = n is not None and RuntimeOptions.restart_after_change()
     c = RuntimeOptions.restart_on_touch() and not Player.running()
     if a or b or c:
       Player.start()
-    cls._restart_player_after_playing_feedback = False
+    cls._restart_player_after_feedback = False
     cls._registered_text = text
     cls._registered_lines = lines
     cls._registered_len = len(lines)
