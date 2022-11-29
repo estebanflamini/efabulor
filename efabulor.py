@@ -2498,11 +2498,11 @@ class TrackingController:
   #@mainthreadmethod # Executed only in main thread. Uncomment to enforce check at runtime.
   def _new_line_number_for_forward_tracking(cls):
     if RuntimeOptions.sequence_mode() is SEQUENCE_MODIFIED \
-        and modified_lines[0] > cls._player_was_at_line \
+        and cls._modified_lines[0] > cls._player_was_at_line \
         and Player.running_and_not_paused():
       return None
     else:
-      return modified_lines[0]
+      return cls._modified_lines[0]
 
   _lock = threading.RLock()
 
