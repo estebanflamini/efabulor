@@ -126,6 +126,7 @@ MINSPEED = 10
 
 MACRO_QUIT_ASK = "quit-ask"
 MACRO_QUIT_NOW = "quit-now"
+MSG_INVALID_MACRO = _("‘%s’ is not a valid action name.")
 
 
 def staticclass(cls):
@@ -709,14 +710,10 @@ class Main:
                 parsed_command = None
                 line = UserInput.readline(0.1)
                 if line:
-                    if not (line.startswith("<") and line.endswith(">")):
+                    if not Commands.is_macro(line):
                         Output.say(
-                            _(
-                                "In this version, only calling macros "
-                                "(surrounded by <>) is allowed in scripted "
-                                "mode."
-                            ),
-                            type_of_msg=Output.ERROR,
+                            MSG_INVALID_MACRO % line,
+                            type_of_msg=Output.ERROR
                         )
                     else:
                         parsed_command = Commands.parse(line)
@@ -1271,6 +1268,8 @@ class Commands:
         # We put this code inside a method so we can call it after
         # PlayerCommands (on which it depends) was defined.
         # This is yet another hack, to avoid having to move code around.
+        # This type of hacks will be probably not be necessary if and when we
+        # convert the static classes into proper singletons.
         cls._macros = {
             MACRO_QUIT_NOW:
                 "stop ; " + cls.QUIT_CMD,
@@ -1565,16 +1564,25 @@ class Commands:
     # Executed only in main thread. Uncomment the following decorator...
     # @mainthreadmethod
     # ... to enforce check at runtime.
+    def is_macro(cls, name):
+        if not (name.startswith("<") and name.endswith(">")):
+            return False
+        name = name[1:-1]
+        if cls._macros is None:
+            cls._define_macros()
+        return name in cls._macros
+
+    @classmethod  # class Commands
+    # Executed only in main thread. Uncomment the following decorator...
+    # @mainthreadmethod
+    # ... to enforce check at runtime.
     def parse(cls, cmd):
         cmd = cmd.strip()
 
         if not cmd:
             return None
 
-        if cls._macros is None:
-            cls._define_macros()
-
-        if cmd.startswith("<") and cmd.endswith(">"):  # Macro processing
+        if cls.is_macro(cmd):
             return cls._parse_macro(cmd[1:-1])
 
         # The 'sh' command has to be parsed a little differently than the other
@@ -5529,14 +5537,8 @@ class CmdLineArgs:
             if not cmd:
                 break
 
-            if not (cmd.startswith("<") and cmd.endswith(">")):
-                Output.say(
-                    _(
-                        "Only actions surrounded by brackets (<>) are allowed "
-                        "in this version."
-                    ),
-                    type_of_msg=Output.ERROR,
-                )
+            if not Commands.is_macro(cmd):
+                Output.say(MSG_INVALID_MACRO % cmd, type_of_msg=Output.ERROR)
                 continue
 
             parsed_command = Commands.parse(cmd)
@@ -5903,14 +5905,10 @@ class CmdLineArgs:
                     )
                 key = translate_control_chars(m.group(1))
                 value = m.group(2)
-                if not (
-                    value.startswith("<") and value.endswith(">")
-                ):  # In this version, we only allow macros in key conf. files
+                if not Commands.is_macro(value):
+                    # In this version, we only allow macros in key conf. files
                     cls._report_key_binding_error(
-                        _(
-                            "The following action name must be surrounded by "
-                            "simple brackets (<>): %s"
-                        ) % value,
+                        MSG_INVALID_MACRO % value,
                         filename,
                     )
                 if key in _processed_bindings:
