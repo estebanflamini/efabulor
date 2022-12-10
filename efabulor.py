@@ -710,6 +710,7 @@ class Main:
                 parsed_command = None
                 line = UserInput.readline(0.1)
                 if line:
+                    line = line.strip()
                     if not Commands.is_macro(line):
                         Output.say(
                             MSG_INVALID_MACRO % line,
