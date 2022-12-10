@@ -126,7 +126,7 @@ MINSPEED = 10
 
 MACRO_QUIT_ASK = "quit-ask"
 MACRO_QUIT_NOW = "quit-now"
-MSG_INVALID_MACRO = _("‘%s’ is not a valid action name.")
+MSG_INVALID_MACRO = _("'%s' is not a valid action name.")
 
 
 def staticclass(cls):
@@ -5924,7 +5924,7 @@ class CmdLineArgs:
                 if key in key_bindings:
                     Output.say(
                         _("The binding for key %s has been redefined to be "
-                          "‘%s’.") % (repr(key), value),
+                          "'%s'.") % (repr(key), value),
                         type_of_msg=Output.INFO,
                     )
                 key_bindings[key] = value
