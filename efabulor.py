@@ -5925,8 +5925,8 @@ class CmdLineArgs:
                     _processed_bindings.append(key)
                 if key in key_bindings:
                     Output.say(
-                        _("The binding for key ‘%s’ has been redefined to be "
-                          "‘%s’.") % (key, value),
+                        _("The binding for key %s has been redefined to be "
+                          "‘%s’.") % (repr(key), value),
                         type_of_msg=Output.INFO,
                     )
                 key_bindings[key] = value
