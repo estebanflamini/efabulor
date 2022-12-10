@@ -5887,6 +5887,7 @@ class CmdLineArgs:
             cls._check_file_validity(filename)
             _bindings = cls._read_config_file(filename)
             _bindings = _bindings.split("\n")
+            # Be careful not to delete next line
             _bindings = list(map(str.strip, _bindings))
             _bindings = [x for x in _bindings if x]
             _bindings = [x for x in _bindings if not x.startswith("#")]
@@ -5896,12 +5897,16 @@ class CmdLineArgs:
             else:
                 key_bindings = {}
             for binding in _bindings:
-                binding = binding.strip()
-                m = re.match(r"^\s*(\S+)\s+(.+)\s*$", binding)
+                # binding was already stripped of spaces above
+                m = re.match(r"^(\S+)\s+(.+)$", binding)
                 if not m:
                     cls._report_key_binding_error(
-                        _("Missing action in the following keystroke "
-                          "configuration: %s") % binding,
+                        _(
+                            "The following line is wrong: '%s'. Key bindings "
+                            "must consist of a key specification, followed by "
+                            "one or more spaces, followed by the desired "
+                            "action."
+                          ) % binding,
                         filename,
                     )
                 key = translate_control_chars(m.group(1))
