@@ -5899,7 +5899,7 @@ class CmdLineArgs:
                     cls._report_key_binding_error(
                         _("Missing action in the following keystroke "
                           "configuration: %s") % binding,
-                        args,
+                        filename,
                     )
                 key = translate_control_chars(m.group(1))
                 value = m.group(2)
@@ -5911,7 +5911,7 @@ class CmdLineArgs:
                             "The following action name must be surrounded by "
                             "simple brackets (<>): %s"
                         ) % value,
-                        args,
+                        filename,
                     )
                 if key in _processed_bindings:
                     cls._report_key_binding_error(
@@ -5919,7 +5919,7 @@ class CmdLineArgs:
                             "The following keystroke appears more than once "
                             "in the configuration file: %s"
                         ) % key,
-                        args,
+                        filename,
                     )
                 else:
                     _processed_bindings.append(key)
@@ -5935,7 +5935,7 @@ class CmdLineArgs:
             parsed_command = Commands.parse(binding)
             if not parsed_command:
                 cls._report_key_binding_error(
-                    _("The following action is wrong: %s") % binding, args
+                    _("The following action is wrong: %s") % binding, filename
                 )
             elif Commands.contains_quit(parsed_command):
                 binding_for_quit = True
@@ -5943,7 +5943,7 @@ class CmdLineArgs:
             cls._report_key_binding_error(
                 _("A keystroke must be configured for the '%s' or '%s' "
                   "action.") % (MACRO_QUIT_ASK, MACRO_QUIT_NOW),
-                args,
+                filename,
             )
         KeyBindings.set(key_bindings)
 
@@ -5962,11 +5962,11 @@ class CmdLineArgs:
     # Executed only in main thread. Uncomment the following decorator...
     # @mainthreadmethod
     # ... to enforce check at runtime.
-    def _report_key_binding_error(e, args):
-        if args.key_bindings:
+    def _report_key_binding_error(e, filename=None):
+        if filename:
             Output.say(
                 _("Error in keystroke configuration file: %s.")
-                % args.key_bindings,
+                % filename,
                 type_of_msg=Output.ERROR,
             )
         else:
