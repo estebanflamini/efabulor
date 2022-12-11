@@ -1416,6 +1416,7 @@ class Commands:
 
             "show-input-cmd-stop":
                 "stop ; showinputcmd",
+
             "show-input-cmd":
                 "showinputcmd",
         }
@@ -1586,12 +1587,6 @@ class Commands:
         if cls.is_macro(cmd):
             return cls._parse_macro(cmd[1:-1])
 
-        # The 'sh' command has to be parsed a little differently than the other
-        # commands.
-        if cmd == "sh":
-            return ["sh"]
-        elif cmd.startswith("sh "):
-            return ["sh", cmd[3:].strip()]
         try:
             ret = cls._parse(shlex.split(cmd))
             if not ret:
