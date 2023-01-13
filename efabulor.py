@@ -1426,6 +1426,13 @@ class Commands:
         ]:
             cls._macros[m] = m
 
+        # We will allow macro names to be surrounded by brackets for backward
+        # compatibility, but it is not mandatory now. Let's use the
+        # quick-and-dirty way, and just duplicate the keys. (Not a big dict.)
+        for m in list(cls._macros.keys()):
+            _m = "<%s>" % m
+            cls._macros[_m] = cls._macros[m]
+
     CMD_SEPARATOR_LOW = ";"
     CMD_SEPARATOR_HIGH = "and"
     CMD_SEPARATOR_THEN = "then"
@@ -1507,7 +1514,6 @@ class Commands:
     MALFORMED_COMMAND = _("The following command is wrong: %s. Reported error "
                           "is: %s.")
     WRONG_COMMAND = _("The following command is wrong: %s")
-    WRONG_MACRO = _("The following macro/action is wrong: <%s>")
     UNSUCCESFUL_COMMAND = _("The following command failed: %s. Reported error "
                             "is: %s.")
 
@@ -1567,9 +1573,6 @@ class Commands:
     # @mainthreadmethod
     # ... to enforce check at runtime.
     def is_macro(cls, name):
-        if not (name.startswith("<") and name.endswith(">")):
-            return False
-        name = name[1:-1]
         if cls._macros is None:
             cls._define_macros()
         return name in cls._macros
@@ -1585,7 +1588,7 @@ class Commands:
             return None
 
         if cls.is_macro(cmd):
-            return cls._parse_macro(cmd[1:-1])
+            cmd = cls._macros[cmd]
 
         try:
             ret = cls._parse(shlex.split(cmd))
@@ -1598,16 +1601,6 @@ class Commands:
                 type_of_msg=Output.ERROR
             )
             return None
-
-    @classmethod  # class Commands
-    # Executed only in main thread. Uncomment the following decorator...
-    # @mainthreadmethod
-    # ... to enforce check at runtime.
-    def _parse_macro(cls, macro):
-        if macro in cls._macros:
-            return cls.parse(cls._macros[macro])
-        Output.say(cls.WRONG_MACRO % macro, type_of_msg=Output.ERROR)
-        return None
 
     @classmethod  # class Commands
     # Executed only in main thread. Uncomment the following decorator...
@@ -4021,59 +4014,59 @@ class KeyBindings:
     # called from the main thread.
 
     DEFAULT_BINDINGS = {
-        "\x03": "<%s>" % MACRO_QUIT_NOW,
-        "Q": "<%s>" % MACRO_QUIT_NOW,
-        "q": "<%s>" % MACRO_QUIT_ASK,
-        " ": "<toggle>",
-        "a": "<restart>",
-        "A": "<restart-and-stop>",
-        "x": "<stop-and-reset-pointer>",
-        "V": "<first-stop>",
-        "v": "<first>",
-        "M": "<last-stop>",
-        "m": "<last>",
-        "N": "<next-stop>",
-        "n": "<next>",
-        "B": "<stop-or-previous>",
-        "b": "<previous>",
-        ".": "<toggle-stop-after-current-line>",
-        ",": "<toggle-stop-after-each-line>",
-        "S": "<toggle-apply-subst>",
-        "D": "<toggle-show-subst>",
-        "u": "<log-subst>",
-        "j": "<log-transform>",
-        "l": "<cycle-line-number>",
-        "w": "<show-line>",
-        "f": "<search-plain-case-insensitive>",
-        "F": "<search-plain-case-sensitive>",
-        "r": "<search-regex-case-insensitive>",
-        "R": "<search-regex-case-sensitive>",
-        "/": "<search>",
-        "t": "<find-next>",
-        "T": "<find-next-stop>",
-        "e": "<find-prev>",
-        "E": "<find-prev-stop>",
-        "g": "<go-line>",
-        "<": "<prev-change>",
-        ">": "<next-change>",
-        "*": "<random>",
-        "+": "<faster>",
-        "-": "<slower>",
-        "o": "<open-input-file>",
-        "O": "<open-input-file-stop>",
-        "s": "<open-subst>",
-        ":": "<open-transform>",
-        "_": "<open-cl-monitored-file>",
-        "c": "<open-shell>",
-        "L": "<reload>",
-        "C": "<check-files>",
-        "?": "<choose-tracking-mode>",
-        ")": "<choose-sequence-mode>",
-        "=": "<choose-feedback-mode>",
-        "0": "<special-mode>",
-        "1": "<normal-mode>",
-        "I": "<show-input-cmd-stop>",
-        "i": "<show-input-cmd>",
+        "\x03": MACRO_QUIT_NOW,
+        "Q": MACRO_QUIT_NOW,
+        "q": MACRO_QUIT_ASK,
+        " ": "toggle",
+        "a": "restart",
+        "A": "restart-and-stop",
+        "x": "stop-and-reset-pointer",
+        "V": "first-stop",
+        "v": "first",
+        "M": "last-stop",
+        "m": "last",
+        "N": "next-stop",
+        "n": "next",
+        "B": "stop-or-previous",
+        "b": "previous",
+        ".": "toggle-stop-after-current-line",
+        ",": "toggle-stop-after-each-line",
+        "S": "toggle-apply-subst",
+        "D": "toggle-show-subst",
+        "u": "log-subst",
+        "j": "log-transform",
+        "l": "cycle-line-number",
+        "w": "show-line",
+        "f": "search-plain-case-insensitive",
+        "F": "search-plain-case-sensitive",
+        "r": "search-regex-case-insensitive",
+        "R": "search-regex-case-sensitive",
+        "/": "search",
+        "t": "find-next",
+        "T": "find-next-stop",
+        "e": "find-prev",
+        "E": "find-prev-stop",
+        "g": "go-line",
+        "<": "prev-change",
+        ">": "next-change",
+        "*": "random",
+        "+": "faster",
+        "-": "slower",
+        "o": "open-input-file",
+        "O": "open-input-file-stop",
+        "s": "open-subst",
+        ":": "open-transform",
+        "_": "open-cl-monitored-file",
+        "c": "open-shell",
+        "L": "reload",
+        "C": "check-files",
+        "?": "choose-tracking-mode",
+        ")": "choose-sequence-mode",
+        "=": "choose-feedback-mode",
+        "0": "special-mode",
+        "1": "normal-mode",
+        "I": "show-input-cmd-stop",
+        "i": "show-input-cmd",
     }
 
     _bindings = DEFAULT_BINDINGS
