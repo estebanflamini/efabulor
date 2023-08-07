@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-__version__ = "1.0"
+__version__ = "1.0.1"
 
 # Import needed Python packages. I mostly prefer to import the module as a
 # whole (instead of from module import ...) to avoid injecting names into the
@@ -503,9 +503,9 @@ class EspeakController:
 
     # class EspeakController
     def _call_espeak(self, line):
-        line = re.sub(
-            r"^\s*-", r"\-", line
-        )  # to avoid an initial hyphen to be taken as an option
+        # Avoid an initial hyphen to be taken as an option:
+        while line.lstrip().startswith("-"):
+            line = line.lstrip()[1:]
         d = ["espeak", "-s", str(self._speed)]
         if self._voice:
             d += ["-v", self._voice]
