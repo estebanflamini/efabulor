@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 # Import needed Python packages. I mostly prefer to import the module as a
 # whole (instead of from module import ...) to avoid injecting names into the
@@ -6000,7 +6000,7 @@ class CmdLineArgs:
                 traceback.print_stack()
                 Main.terminate(UNSUPPORTED_PLATFORM)
             if LINUX:
-                mt = "text/plain"
+                mt = None
                 try:
                     # Sanitizing args.file is not necessary, provided the
                     # command is given as an array. Be VERY careful to provide
@@ -6020,11 +6020,6 @@ class CmdLineArgs:
                             "the file: %s"
                         ) % args.file,
                         type_of_msg=Output.ERROR,
-                    )
-                    Output.say(
-                        _("The program will assume the input file’s mimetype "
-                          "is %s.") % mt,
-                        type_of_msg=Output.INFO,
                     )
             else:
                 mt = (
