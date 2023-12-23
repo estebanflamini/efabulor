@@ -1,0 +1,23 @@
+For the time being, only a test suite for the efabtracking module
+is provided.* It uses a brute-force approach of testing the output
+of the principal function in that module against an assorted set of
+inputs.** Individual tests are not reported as they run, and the
+testing suite will fail and exit at the first failed test if any.
+
+To run the test:
+
+python3 test_efabtracking.py
+
+(Be sure to have test_efabtracking.py in the same directory as all
+the efab*py files.)
+
+This is Work-In-Progress. I expect to add testing suites for other
+modules, using standard tools such as the unittest library.
+
+------------------------------------------------------------------
+
+* The efabtracking module provides an important part of efabulor's
+functionality, and its output depends in  complex ways on its inputs,
+so it was a good place to start adding tests.
+
+** The test takes around 15 seconds in a reasonably fast computer.
