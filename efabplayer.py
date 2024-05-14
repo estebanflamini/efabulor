@@ -1023,7 +1023,6 @@ class _Updater:
         if action == efabtracking.STOP:
             state = self._player._stop(state)
         elif action == efabtracking.RESTART:
-            state = replace(state, do_not_pause_before=True)
             state = self._player._restart(state)
 
         self._player._putstate(state)
